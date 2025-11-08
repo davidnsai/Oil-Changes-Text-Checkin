@@ -1,0 +1,85 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <AzureFunctionsVersion>v4</AzureFunctionsVersion>
+        <OutputType>Exe</OutputType>
+        <RootNamespace>TextCheckIn.Functions</RootNamespace>
+        <AssemblyName>TextCheckIn.Functions</AssemblyName>
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
+        <!-- Disable XML documentation warnings for Function projects -->
+    </PropertyGroup>
+    <ItemGroup>
+        <!-- Azure Functions Core -->
+        <PackageReference Include="Microsoft.Azure.Functions.Worker"
+                          Version="1.21.0" />
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk"
+                          Version="1.16.4" />
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http"
+                          Version="3.1.0" />
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Timer"
+                          Version="4.3.0" />
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.ServiceBus"
+                          Version="5.16.0" />
+        <!-- Application Insights -->
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights"
+                          Version="1.2.0" />
+        <PackageReference Include="Microsoft.ApplicationInsights.WorkerService"
+                          Version="2.22.0" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design"
+                          Version="8.0.2">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <!-- Dependency Injection & Configuration -->
+        <PackageReference Include="Microsoft.Extensions.Hosting"
+                          Version="$(MicrosoftExtensionsVersion)" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets"
+                          Version="$(MicrosoftExtensionsVersion)" />
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions"
+                          Version="$(MicrosoftExtensionsVersion)" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions"
+                          Version="$(MicrosoftExtensionsVersion)" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions"
+                          Version="$(MicrosoftExtensionsVersion)" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions"
+                          Version="$(MicrosoftExtensionsVersion)" />
+        <PackageReference Include="Microsoft.Extensions.Options"
+                          Version="$(MicrosoftExtensionsVersion)" />
+        <!-- Authentication & Authorization -->
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer"
+                          Version="8.0.8" />
+        <!-- Validation -->
+        <PackageReference Include="FluentValidation"
+                          Version="$(FluentValidationVersion)" />
+        <PackageReference Include="FluentValidation.DependencyInjectionExtensions"
+                          Version="$(FluentValidationVersion)" />
+        <!-- JSON -->
+        <PackageReference Include="System.Text.Json"
+                          Version="$(SystemTextJsonVersion)" />
+        <!-- HTTP Client -->
+        <PackageReference Include="Microsoft.Extensions.Http"
+                          Version="$(MicrosoftExtensionsVersion)" />
+        <!-- Azure Storage for SAS token generation -->
+        <PackageReference Include="Azure.Storage.Blobs"
+                          Version="12.19.1" />
+        <PackageReference Include="Azure.Storage.Common"
+                          Version="12.18.1" />
+        <!-- Health Checks (commented out due to dependency conflicts) -->
+        <!-- <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="$(MicrosoftExtensionsVersion)" /> -->
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\TextCheckIn.Core\TextCheckIn.Core.csproj" />
+        <ProjectReference Include="..\TextCheckIn.Data\TextCheckIn.Data.csproj" />
+        <ProjectReference Include="..\TextCheckIn.Shared\TextCheckIn.Shared.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+        <None Update="host.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="local.settings.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+        </None>
+    </ItemGroup>
+</Project>

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>TextCheckIn.Shared</RootNamespace>
+    <AssemblyName>TextCheckIn.Shared</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Microsoft Extensions -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="$(MicrosoftExtensionsVersion)" />
+    
+    <!-- JSON -->
+    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
+    
+    <!-- Phone number utilities -->
+    <PackageReference Include="libphonenumber-csharp" Version="8.13.39" />
+    
+    <!-- Text processing -->
+    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
+  </ItemGroup>
+</Project>

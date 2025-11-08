@@ -1,0 +1,77 @@
+# Test API endpoints for Text Check-In Backend
+# Use this file with REST Client extension in VS Code or similar tools
+
+@baseUrl = http://localhost:7071/api
+
+### Health Check (Ping)
+GET {{baseUrl}}/ping
+
+### Health Check (Detailed)
+GET {{baseUrl}}/health
+
+### Get Power-6 Service Catalog
+GET {{baseUrl}}/services/power6
+
+### Vehicle Lookup by License Plate (Vehicle Found)
+GET {{baseUrl}}/vehicle-lookup/license-plate/ABC123/CA?location=f69998cd-607a-4ad3-ab83-b002a42b757e
+
+### Vehicle Lookup by License Plate with Different Location
+GET {{baseUrl}}/vehicle-lookup/license-plate/ABC123/CA?location=a1234567-1234-1234-1234-123456789012
+
+### Vehicle Lookup by License Plate (Vehicle Not Found)
+GET {{baseUrl}}/vehicle-lookup/license-plate/NOTFOUND/CA?location=f69998cd-607a-4ad3-ab83-b002a42b757e
+
+### Vehicle Lookup by VIN
+GET {{baseUrl}}/vehicle-lookup/vin/1HGBH41JXMN109186?location=f69998cd-607a-4ad3-ab83-b002a42b757e
+
+### Vehicle Lookup by VIN with Different Location
+GET {{baseUrl}}/vehicle-lookup/vin/1HGBH41JXMN109186?location=a1234567-1234-1234-1234-123456789012
+
+### Test Webhook (Mock - only works in development)
+POST {{baseUrl}}/test/webhook
+Content-Type: application/json
+
+{
+  "licensePlate": "ABC123",
+  "stateCode": "CA"
+}
+
+### Sample omniX Webhook (for testing signature validation)
+POST {{baseUrl}}/webhook/omnix
+Content-Type: application/json
+X-OmniX-Signature: test-signature-here
+X-OmniX-Timestamp: 2025-09-11T15:30:00Z
+
+{
+  "locationId": "f69998cd-607a-4ad3-ab83-b002a42b757e",
+  "clientLocationId": "303",
+  "datetime": "2025-09-11T15:30:00Z",
+  "licensePlate": "ABC123",
+  "stateCode": "CA",
+  "make": "HONDA",
+  "model": "CIVIC", 
+  "year": 2018,
+  "vin": "1HGBH41JXMN109186",
+  "lastServiceDate": "2024-06-15",
+  "lastServiceMileage": 85000,
+  "estimatedMileage": 92500,
+  "serviceIntervals": [
+    {
+      "mileage": 92500,
+      "services": [
+        {
+          "id": "c6f1ef6a-8d9f-46ac-94e8-359c3aa11ffd",
+          "name": "Transmission service",
+          "intervalMiles": 90000,
+          "lastServiceMiles": 60000
+        },
+        {
+          "id": "f072fcb0-425f-4961-9894-cb6b7aec5133",
+          "name": "Cabin Air Filter",
+          "intervalMiles": 15000,
+          "lastServiceMiles": null
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "ASPNETCORE_ENVIRONMENT": "Development",
+    
+    // Application Insights
+    "APPLICATIONINSIGHTS_CONNECTION_STRING": "InstrumentationKey=your-app-insights-key",
+    
+    // Database Connection
+    "ConnectionStrings:DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=TextCheckInDb;Trusted_Connection=true;MultipleActiveResultSets=true",
+    
+    // omniX Integration
+    "OmniX:UseMockService": "true",
+    "OmniX:ApiUrl": "https://omnix-api.com/api/v1",
+    "OmniX:ApiKey": "your-omnix-api-key-here",
+    "OmniX:WebhookSecret": "your-omnix-webhook-secret-here",
+    "OmniX:TimeoutSeconds": "30",
+    "OmniX:MaxWebhookPayloadSize": "1048576",
+    "OmniX:EnableSignatureValidation": "true",
+    "OmniX:MaxWebhookAgeMinutes": "5",
+    
+    // Mock Service Configuration
+    "OmniX:Mock:DelayMs": "500",
+    "OmniX:Mock:NotFoundProbability": "0.1",
+    "OmniX:Mock:PartialDataProbability": "0.2",
+    "OmniX:Mock:ErrorProbability": "0.05",
+    "OmniX:Mock:GenerateRealisticRecommendations": "true",
+    "OmniX:Mock:DefaultStoreId": "303",
+    
+    // Session Management
+    "Session:StorageType": "Database",
+    "Session:DefaultExpirationMinutes": "30",
+    "Session:CleanupIntervalMinutes": "60",
+    "Session:MaxConcurrentSessions": "1000",
+    "Session:RedisConnectionString": "localhost:6379",
+    
+    // SMS Service Configuration
+    "SmsService:BaseUrl": "https://api.sms.com",
+    "SmsService:IdentityKey": "your-identity-key-here",
+    "SmsService:FunctionsKey": "your-functions-key-here",
+    
+    // CORS Settings
+    "Cors:AllowedOrigins": "http://localhost:3000,https://localhost:3000,http://localhost:3001",
+    
+    // Rate Limiting
+    "RateLimit:DefaultPolicy:Window": "00:01:00",
+    "RateLimit:DefaultPolicy:PermitLimit": "100",
+    
+    // Feature Flags
+    "FeatureFlags:EnableSmsNotifications": "false",
+    "FeatureFlags:EnableEmailNotifications": "false",
+    "FeatureFlags:EnableAuditLogging": "true",
+    "FeatureFlags:EnableWebhookProcessing": "true",
+    "FeatureFlags:EnableRealtimeUpdates": "false",
+    
+    // Cache Settings (Future use)
+    "Cache:RedisConnectionString": "localhost:6379",
+    "Cache:DefaultExpirationMinutes": "60",
+    
+    // Azure Storage Configuration
+    "AzureStorage": "DefaultEndpointsProtocol=https;AccountName=your-storage-account;AccountKey=your-storage-key;EndpointSuffix=core.windows.net",
+    "VideoContainer": "text-check-in-videos"
+  },
+  "Host": {
+    "LocalHttpPort": 7071,
+    "CORS": "*",
+    "CORSCredentials": false
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=TextCheckInDb;Trusted_Connection=true;MultipleActiveResultSets=true"
+  }
+}
