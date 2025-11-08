@@ -31,10 +31,6 @@ namespace TextCheckIn.Functions.Functions
             _sessionManagementService = sessionManagementService;
         }
 
-        /// <summary>
-        /// Endpoint to get recent check-ins
-        /// GET /api/checkin/recent?location={locationId}
-        /// </summary>
         [Function("GetRecentCheckIns")]
         public async Task<HttpResponseData> GetRecentCheckInsAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "checkin/recent")]
@@ -135,10 +131,6 @@ namespace TextCheckIn.Functions.Functions
             }
         }
 
-        /// <summary>
-        /// Endpoint to perform a check-in
-        /// POST /api/checkin/submit
-        /// </summary>
         [Function("PerformCheckIn")]
         public async Task<HttpResponseData> PerformCheckInAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "checkin/submit")]
@@ -157,7 +149,6 @@ namespace TextCheckIn.Functions.Functions
                 };
 
                 var checkInRequest = JsonSerializer.Deserialize<CheckInRequest>(request.Body, options);
-
 
                 // Validate the request
                 if (checkInRequest == null || string.IsNullOrWhiteSpace(checkInRequest.PhoneNumber) || string.IsNullOrWhiteSpace(checkInRequest.StoreId))

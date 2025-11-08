@@ -8,9 +8,6 @@ using TextCheckIn.Data.Repositories.Interfaces;
 
 namespace TextCheckIn.Data.Repositories
 {
-    /// <summary>
-    /// Repository for Customer entity operations
-    /// </summary>
     public class CustomerRepository : ICustomerRepository
     {
         private readonly AppDbContext _context;
@@ -22,7 +19,6 @@ namespace TextCheckIn.Data.Repositories
             _logger = logger;
         }
 
-        /// <inheritdoc/>
         public async Task<Customer?> GetByUuidAsync(string uuid)
         {
             try
@@ -40,7 +36,6 @@ namespace TextCheckIn.Data.Repositories
             }
         }
 
-        /// <inheritdoc/>
         public async Task<Customer?> GetByIdAsync(int id)
         {
             return await _context.Customers
@@ -48,7 +43,6 @@ namespace TextCheckIn.Data.Repositories
                 .FirstOrDefaultAsync(c => c.Id == id);
         }
 
-        /// <inheritdoc/>
         public async Task<Customer?> GetByPhoneNumberAsync(string phoneNumber)
         {
             try
@@ -64,7 +58,6 @@ namespace TextCheckIn.Data.Repositories
             }
         }
 
-        /// <inheritdoc/>
         public async Task<Customer> CreateCustomerAsync(Customer customer)
         {
             try
@@ -86,7 +79,6 @@ namespace TextCheckIn.Data.Repositories
             }
         }
 
-        /// <inheritdoc/>
         public async Task<Customer> UpdateCustomerAsync(Customer customer)
         {
             try
@@ -106,7 +98,6 @@ namespace TextCheckIn.Data.Repositories
             }
         }
 
-        /// <inheritdoc/>
         public async Task<bool> ExistsByPhoneNumberAsync(string phoneNumber)
         {
             try

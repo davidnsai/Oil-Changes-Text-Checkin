@@ -10,32 +10,14 @@ using TextCheckIn.Core.Services.Interfaces;
 
 namespace TextCheckIn.Core.Services
 {
-    /// <summary>
-    /// Service for sending SMS messages via external SMS API
-    /// </summary>
     public class SmsService : ISmsService
     {
-        /// <summary>
-        /// The HTTP client for making API requests
-        /// </summary>
         private readonly HttpClient _httpClient;
 
-        /// <summary>
-        /// Configuration settings for the SMS service
-        /// </summary>
         private readonly SmsConfiguration _configuration;
 
-        /// <summary>
-        /// Logger for the SMS service
-        /// </summary>
         private readonly ILogger<SmsService> _logger;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SmsService"/> class
-        /// </summary>
-        /// <param name="httpClient">The HTTP client for making API requests</param>
-        /// <param name="configuration">Configuration settings for the SMS service</param>
-        /// <param name="logger">Logger for the SMS service</param>
         public SmsService(
             HttpClient httpClient,
             IOptions<SmsConfiguration> configuration,
@@ -51,12 +33,6 @@ namespace TextCheckIn.Core.Services
             _httpClient.DefaultRequestHeaders.Add("x-functions-key", _configuration.FunctionsKey);
         }
 
-        /// <inheritdoc/>
-        /// <param name="phoneNumber">The recipient's phone number</param>
-        /// <param name="message">The message content to send</param>
-        /// <param name="firstName">The recipient's first name (defaults to empty string)</param>
-        /// <param name="lastName">The recipient's last name (defaults to empty string)</param>
-        /// <returns>True if the SMS was sent successfully, otherwise false</returns>
         public async Task<bool> SendSmsAsync(string phoneNumber, string message, string firstName = "", string lastName = "")
         {
             try
@@ -95,12 +71,6 @@ namespace TextCheckIn.Core.Services
             }
         }
 
-        /// <inheritdoc/>
-        /// <param name="phoneNumber">The recipient's phone number</param>
-        /// <param name="otpCode">The one-time password code to send</param>
-        /// <param name="firstName">The recipient's first name (defaults to empty string)</param>
-        /// <param name="lastName">The recipient's last name (defaults to empty string)</param>
-        /// <returns>True if the OTP SMS was sent successfully, otherwise false</returns>
         public async Task<bool> SendOtpAsync(string phoneNumber, string otpCode, string firstName = "", string lastName = "")
         {
             var message = $"Your TextCheckIn verification code is: {otpCode}. This code will expire in 5 minutes.";

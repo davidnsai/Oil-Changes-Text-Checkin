@@ -77,7 +77,6 @@ namespace TextCheckIn.Data.Repositories
             return _context.SaveChanges() > 0;
         }
 
-        /// <inheritdoc/>
         public async Task<CheckIn?> GetCheckInByUuidAsync(Guid uuid)
         {
             return await _context.CheckIns
@@ -88,7 +87,6 @@ namespace TextCheckIn.Data.Repositories
                 .FirstOrDefaultAsync(c => c.Uuid == uuid);
         }
 
-        /// <inheritdoc/>
         public async Task<CheckIn> UpdateCheckInAsync(CheckIn checkIn)
         {
             checkIn.UpdatedAt = DateTime.UtcNow;

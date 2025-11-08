@@ -17,18 +17,8 @@ namespace TextCheckIn.Data.Repositories.Interfaces
         bool UpdateCheckIn(CheckIn checkIn);
         bool DeleteCheckIn(int id);
         
-        /// <summary>
-        /// Gets a check-in by its UUID
-        /// </summary>
-        /// <param name="uuid">The check-in UUID</param>
-        /// <returns>The check-in if found, null otherwise</returns>
         Task<CheckIn?> GetCheckInByUuidAsync(Guid uuid);
         
-        /// <summary>
-        /// Updates a check-in asynchronously
-        /// </summary>
-        /// <param name="checkIn">The check-in to update</param>
-        /// <returns>The updated check-in</returns>
         Task<CheckIn> UpdateCheckInAsync(CheckIn checkIn);
 
         // <summary>

@@ -15,7 +15,6 @@ namespace TextCheckIn.Data.Migrations
     [Migration("20251030200731_InitialSQLServerMigration")]
     partial class InitialSQLServerMigration
     {
-        /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618

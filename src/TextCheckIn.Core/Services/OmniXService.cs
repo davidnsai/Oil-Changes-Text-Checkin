@@ -12,13 +12,6 @@ using TextCheckIn.Data.OmniX.Models;
 
 namespace TextCheckIn.Core.Services
 {
-    /// <summary>
-    /// Implementation of the OmniX service that communicates with the real OmniX API.
-    /// </summary>
-    /// <remarks>
-    /// This service handles API communication with OmniX for retrieving service recommendations
-    /// based on vehicle information (VIN or license plate) and processing incoming webhook notifications.
-    /// </remarks>
     public class OmniXService : OmniXServiceBase
     {
         private readonly OmniXConfiguration _config;
@@ -30,16 +23,6 @@ namespace TextCheckIn.Core.Services
         private readonly ICheckInServiceRepository _checkInServiceRepository;
         private readonly AppDbContext _dbContext;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="OmniXService"/> class.
-        /// </summary>
-        /// <param name="options">The OmniX configuration options.</param>
-        /// <param name="logger">The logger instance.</param>
-        /// <param name="vehicleRepository">The vehicle repository.</param>
-        /// <param name="checkInRepository">The check-in repository.</param>
-        /// <param name="serviceRepository">The service repository.</param>
-        /// <param name="checkInServiceRepository">The check-in service repository.</param>
-        /// <param name="dbContext">The database context for transaction support.</param>
         public OmniXService(
             IOptions<OmniXConfiguration> options,
             ILogger<OmniXService> logger,
@@ -62,21 +45,11 @@ namespace TextCheckIn.Core.Services
             };
         }
 
-        /// <summary>
-        /// Gets service recommendations based on VIN.
-        /// </summary>
-        /// <param name="request">The request containing VIN and location information.</param>
-        /// <returns>Service recommendations for the vehicle, or null if not found or on error.</returns>
         public override async Task<List<CheckInService>> GetServiceRecommendationAsync(GetServiceRecommendationsByVinRequest request)
         {
             throw new NotImplementedException();
         }
 
-        /// <summary>
-        /// Gets service recommendations based on license plate and state.
-        /// </summary>
-        /// <param name="request">The request containing license plate, state, and location information.</param>
-        /// <returns>Service recommendations for the vehicle, or null if not found or on error.</returns>
         public override async Task<List<CheckInService>> GetServiceRecommendationAsync(GetServiceRecommendationsByLicensePlateRequest request)
         {
             var checkInServices = await _checkInServiceRepository.GetCheckInServicesByCheckInUuidAsync(request.CheckInId);
@@ -84,11 +57,6 @@ namespace TextCheckIn.Core.Services
             return checkInServices;            
         }
 
-        /// <summary>
-        /// Processes incoming service recommendation notifications from webhooks.
-        /// </summary>
-        /// <param name="notification">The incoming service recommendation notification.</param>
-        /// <returns>A task representing the asynchronous operation.</returns>
         public override async Task ProcessIncomingServiceRecommendationAsync(ServiceRecommendation notification)
         {
             using var transaction = await _dbContext.Database.BeginTransactionAsync();

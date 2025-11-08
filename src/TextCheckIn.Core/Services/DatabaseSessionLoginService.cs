@@ -7,21 +7,12 @@ using TextCheckIn.Data.Repositories.Interfaces;
 
 namespace TextCheckIn.Core.Services;
 
-/// <summary>
-/// Database-based implementation of session login service
-/// </summary>
 public class DatabaseSessionLoginService : ISessionLoginService
 {
     private readonly ICheckInRepository _checkInRepository;
     private readonly SessionConfiguration _sessionConfig;
     private readonly ILogger<DatabaseSessionLoginService> _logger;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="DatabaseSessionLoginService"/> class.
-    /// </summary>
-    /// <param name="checkInRepository">Repository for check-in data access</param>
-    /// <param name="sessionConfig">Session configuration settings</param>
-    /// <param name="logger">Logger instance</param>
     public DatabaseSessionLoginService(
         ICheckInRepository checkInRepository,
         IOptions<SessionConfiguration> sessionConfig,
@@ -32,7 +23,6 @@ public class DatabaseSessionLoginService : ISessionLoginService
         _logger = logger;
     }
 
-    /// <inheritdoc/>
     public async Task<CheckInSession> LoginAsync(
         string phoneNumber,
         string storeId,

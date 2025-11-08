@@ -9,9 +9,6 @@ using DomainCheckInSession = TextCheckIn.Core.Models.Domain.CheckInSession;
 
 namespace TextCheckIn.Core.Services
 {
-    /// <summary>
-    /// Service responsible for managing check-in sessions and related operations.
-    /// </summary>
     public class CheckInSessionService : ICheckInSessionService
     {
         private readonly ICheckInRepository _checkInRepository;
@@ -19,13 +16,6 @@ namespace TextCheckIn.Core.Services
         private readonly SessionConfiguration _sessionConfig;
         private readonly ILogger<CheckInSessionService> _logger;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CheckInSessionService"/> class.
-        /// </summary>
-        /// <param name="checkInRepository">The repository for accessing check-in data.</param>
-        /// <param name="sessionLoginService">The session login service (Redis or Database based)</param>
-        /// <param name="sessionConfig">Session configuration settings</param>
-        /// <param name="logger">Logger instance.</param>
         public CheckInSessionService(
             ICheckInRepository checkInRepository,
             ISessionLoginService sessionLoginService,
@@ -38,12 +28,6 @@ namespace TextCheckIn.Core.Services
             _logger = logger;
         }
 
-        /// <summary>
-        /// Gets recent unprocessed check-ins for a specific location and returns vehicle license plates
-        /// </summary>
-        /// <param name="locationId">The location ID to filter check-ins</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>List of vehicle license plates from recent unprocessed check-ins</returns>
         public Task<List<CheckIn>> GetRecentCheckInsByLocationAsync(
             Guid locationId, 
             CancellationToken cancellationToken = default)
@@ -55,7 +39,6 @@ namespace TextCheckIn.Core.Services
             return Task.FromResult(checkIns);
         }
 
-        /// <inheritdoc/>
         public async Task<DomainCheckInSession> LoginAsync(
             string phoneNumber,
             string storeId,
@@ -80,9 +63,6 @@ namespace TextCheckIn.Core.Services
             };
         }
 
-        /// <summary>
-        /// Login using Redis storage
-        /// </summary>
         private async Task<DomainCheckInSession> LoginWithRedisAsync(
             string phoneNumber,
             string storeId,
@@ -92,9 +72,6 @@ namespace TextCheckIn.Core.Services
             return await _sessionLoginService.LoginAsync(phoneNumber, storeId, cancellationToken);
         }
 
-        /// <summary>
-        /// Login using Database storage
-        /// </summary>
         private async Task<DomainCheckInSession> LoginWithDatabaseAsync(
             string phoneNumber,
             string storeId,

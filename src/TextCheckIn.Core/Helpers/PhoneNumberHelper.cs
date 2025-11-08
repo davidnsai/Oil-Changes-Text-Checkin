@@ -3,18 +3,10 @@ using PhoneNumbers;
 
 namespace TextCheckIn.Core.Helpers;
 
-/// <summary>
-/// Helper class for phone number operations including masking
-/// </summary>
 public static class PhoneNumberHelper
 {
     private static readonly PhoneNumberUtil _phoneNumberUtil = PhoneNumberUtil.GetInstance();
 
-    /// <summary>
-    /// Masks a phone number, showing only the last 4 digits
-    /// </summary>
-    /// <param name="phoneNumber">The phone number to mask</param>
-    /// <returns>Masked phone number (e.g., "(XXX) XXX-1234") or original if invalid</returns>
     public static string MaskPhoneNumber(string? phoneNumber)
     {
         if (string.IsNullOrWhiteSpace(phoneNumber))
@@ -57,12 +49,6 @@ public static class PhoneNumberHelper
         }
     }
 
-    /// <summary>
-    /// Validates if a phone number is valid
-    /// </summary>
-    /// <param name="phoneNumber">The phone number to validate</param>
-    /// <param name="regionCode">The region code (default: US)</param>
-    /// <returns>True if valid, false otherwise</returns>
     public static bool IsValidPhoneNumber(string? phoneNumber, string regionCode = "US")
     {
         if (string.IsNullOrWhiteSpace(phoneNumber))
@@ -79,12 +65,6 @@ public static class PhoneNumberHelper
         }
     }
 
-    /// <summary>
-    /// Formats a phone number to E164 format
-    /// </summary>
-    /// <param name="phoneNumber">The phone number to format</param>
-    /// <param name="regionCode">The region code (default: US)</param>
-    /// <returns>E164 formatted phone number or original if invalid</returns>
     public static string FormatToE164(string? phoneNumber, string regionCode = "US")
     {
         if (string.IsNullOrWhiteSpace(phoneNumber))

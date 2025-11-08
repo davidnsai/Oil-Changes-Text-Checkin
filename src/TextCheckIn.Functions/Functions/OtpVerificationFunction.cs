@@ -15,9 +15,6 @@ using TextCheckIn.Functions.Models.Responses;
 
 namespace TextCheckIn.Functions.Functions
 {
-    /// <summary>
-    /// Azure Functions for OTP verification
-    /// </summary>
     public class OtpVerificationFunction
     {
         private readonly IOtpService _otpService;
@@ -46,9 +43,6 @@ namespace TextCheckIn.Functions.Functions
             _logger = logger;
         }
 
-        /// <summary>
-        /// Sends OTP to the specified phone number
-        /// </summary>
         [Function("SendOtp")]
         public async Task<HttpResponseData> SendOtp(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "otp/send")] HttpRequestData req,
@@ -252,9 +246,6 @@ namespace TextCheckIn.Functions.Functions
             }
         }
 
-        /// <summary>
-        /// Verifies OTP code
-        /// </summary>
         [Function("VerifyOtp")]
         public async Task<HttpResponseData> VerifyOtp(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "otp/verify")] HttpRequestData req,

@@ -24,4 +24,3 @@ public class CustomerResponse
     public bool IsFleetCustomer { get; set; }
 }
 
-

@@ -9,9 +9,6 @@ using TextCheckIn.Data.OmniX.Repositories.Abstractions;
 
 namespace TextCheckIn.Data.OmniX.Repositories;
 
-/// <summary>
-/// The default implementation of <see cref="IOmniXRepository"/>.
-/// </summary>
 public class OminXRepository : IOmniXRepository
 {
     private readonly OmniXSettings _omniXSettings;

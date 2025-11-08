@@ -6,21 +6,12 @@ using TextCheckIn.Core.Services.Interfaces;
 
 namespace TextCheckIn.Core.Services;
 
-/// <summary>
-/// Redis-based implementation of session login service
-/// </summary>
 public class RedisSessionLoginService : ISessionLoginService
 {
     private readonly IRedisService _redisService;
     private readonly SessionConfiguration _sessionConfig;
     private readonly ILogger<RedisSessionLoginService> _logger;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="RedisSessionLoginService"/> class.
-    /// </summary>
-    /// <param name="redisService">Redis service for cache operations</param>
-    /// <param name="sessionConfig">Session configuration settings</param>
-    /// <param name="logger">Logger instance</param>
     public RedisSessionLoginService(
         IRedisService redisService,
         IOptions<SessionConfiguration> sessionConfig,
@@ -31,7 +22,6 @@ public class RedisSessionLoginService : ISessionLoginService
         _logger = logger;
     }
 
-    /// <inheritdoc/>
     public async Task<CheckInSession> LoginAsync(
         string phoneNumber,
         string storeId,

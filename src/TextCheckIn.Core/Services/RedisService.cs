@@ -7,9 +7,6 @@ using TextCheckIn.Core.Services.Interfaces;
 
 namespace TextCheckIn.Core.Services;
 
-/// <summary>
-/// Redis cache service implementation
-/// </summary>
 public class RedisService : IRedisService, IDisposable
 {
     private readonly IConnectionMultiplexer _redis;
@@ -17,11 +14,6 @@ public class RedisService : IRedisService, IDisposable
     private readonly ILogger<RedisService> _logger;
     private readonly JsonSerializerOptions _jsonOptions;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="RedisService"/> class.
-    /// </summary>
-    /// <param name="sessionConfig">Session configuration containing Redis connection string</param>
-    /// <param name="logger">Logger instance</param>
     public RedisService(
         IOptions<SessionConfiguration> sessionConfig,
         ILogger<RedisService> logger)
@@ -50,7 +42,6 @@ public class RedisService : IRedisService, IDisposable
         };
     }
 
-    /// <inheritdoc/>
     public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default) where T : class
     {
         try
@@ -74,7 +65,6 @@ public class RedisService : IRedisService, IDisposable
         }
     }
 
-    /// <inheritdoc/>
     public async Task SetAsync<T>(string key, T value, TimeSpan expiration, CancellationToken cancellationToken = default) where T : class
     {
         try
@@ -98,7 +88,6 @@ public class RedisService : IRedisService, IDisposable
         }
     }
 
-    /// <inheritdoc/>
     public async Task<bool> RemoveAsync(string key, CancellationToken cancellationToken = default)
     {
         try
@@ -123,7 +112,6 @@ public class RedisService : IRedisService, IDisposable
         }
     }
 
-    /// <inheritdoc/>
     public async Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default)
     {
         try
@@ -139,9 +127,6 @@ public class RedisService : IRedisService, IDisposable
         }
     }
 
-    /// <summary>
-    /// Disposes the Redis connection
-    /// </summary>
     public void Dispose()
     {
         _redis?.Dispose();

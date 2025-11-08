@@ -43,10 +43,6 @@ namespace TextCheckIn.Functions.Functions
             _logger = logger;
         }
 
-        /// <summary>
-        /// Generate a SAS token for secure video access
-        /// GET /api/videos/sas?fileName=example.mp4
-        /// </summary>
         [Function("GetVideoSasUrl")]
         public async Task<HttpResponseData> GetVideoSasUrlAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "videos/sas")]
