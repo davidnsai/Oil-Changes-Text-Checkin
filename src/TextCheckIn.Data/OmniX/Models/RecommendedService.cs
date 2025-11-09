@@ -1,14 +1,8 @@
-﻿namespace TextCheckIn.Data.OmniX.Models;
+﻿using TextCheckIn.Shared.Models;
 
-public class RecommendedService
+namespace TextCheckIn.Data.OmniX.Models;
+
+public class RecommendedService : BaseRecommendedService
 {
-    public required string Id { get; set; }
-
-    public required string Name { get; set; }
-
-    public required int IntervalMiles { get; set; }
-
-    public int? LastServiceMiles { get; set; }
-
     public bool SelectedByClient { get; set; }
 }

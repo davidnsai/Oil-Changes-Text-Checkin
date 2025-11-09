@@ -3,21 +3,8 @@ using System.Text.Json.Serialization;
 
 namespace TextCheckIn.Functions.Models.Requests
 {
-    public class OtpVerifyRequest
+    public class OtpVerifyRequest : BaseOtpRequest
     {
-        [Required]
-        [Phone]
-        [JsonPropertyName("phoneNumber")]
-        public required string PhoneNumber { get; set; }
-
-        [Required]
-        [JsonPropertyName("customerId")]
-        public required string CustomerId { get; set; }
-
-        [Required]
-        [JsonPropertyName("checkInId")]
-        public required string CheckInId { get; set; }
-
         [Required]
         [StringLength(6, MinimumLength = 6)]
         [JsonPropertyName("otpCode")]

@@ -3,14 +3,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace TextCheckIn.Data.Entities;
 
-public class CheckIn
+public class CheckIn : BaseEntity
 {
-    [Key]
-    public int Id { get; set; }
-    
-    [Required]
-    public Guid Uuid { get; set; }
-    
     public int? ClientLocationId { get; set; }
 
     public Guid? OmnixLocationId { get; set; }
@@ -26,10 +20,6 @@ public class CheckIn
     public int? EstimatedMileage { get; set; }
     
     public DateTime DateTime { get; set; }
-
-    public DateTime CreatedAt { get; set; }
-
-    public DateTime UpdatedAt { get; set; }
     
     // Navigation properties
     public Vehicle? Vehicle { get; set; }

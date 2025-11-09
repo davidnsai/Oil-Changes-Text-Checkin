@@ -3,14 +3,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace TextCheckIn.Data.Entities;
 
-public class Store
+public class Store : BaseEntity
 {
-    [Key]
-    public int Id { get; set; }
-    
-    [Required]
-    public Guid Uuid { get; set; }
-    
     [Required]
     [MaxLength(255)]
     public string Name { get; set; } = string.Empty;
@@ -29,10 +23,6 @@ public class Store
     
     [MaxLength(20)]
     public string? PhoneNumber { get; set; }
-    
-    public DateTime CreatedAt { get; set; }
-    
-    public DateTime UpdatedAt { get; set; }
     
     // Navigation properties
     public StateCode? State { get; set; }

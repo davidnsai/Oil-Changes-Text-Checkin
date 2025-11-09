@@ -3,12 +3,16 @@ using System.Runtime.InteropServices;
 
 namespace TextCheckIn.Data.Entities;
 
-public class Vehicle
+public class Vehicle : BaseEntity
 {
-    [Key]
-    public int Id { get; set; }
-
-    public Guid VehicleUUID { get; set; }
+    /// <summary>
+    /// Vehicle-specific UUID property name for compatibility
+    /// </summary>
+    public Guid VehicleUUID
+    {
+        get => Uuid;
+        set => Uuid = value;
+    }
 
     [StringLength(17, MinimumLength = 17)]
     public string? Vin { get; set; }
@@ -34,10 +38,6 @@ public class Vehicle
     public DateTime? LastServiceDate { get; set; }
 
     public int? LastServiceMileage { get; set; }
-
-    public DateTime CreatedAt { get; set; }
-
-    public DateTime UpdatedAt { get; set; }
 
     public ICollection<CheckIn> CheckIns { get; set; } = new List<CheckIn>();
     public ICollection<CustomersVehicle> CustomersVehicles { get; set; } = new List<CustomersVehicle>();
