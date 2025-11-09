@@ -7,9 +7,6 @@ using TextCheckIn.Functions.Models.Responses;
 
 namespace TextCheckIn.Functions.Functions;
 
-/// <summary>
-/// Azure Function for system health checks and monitoring
-/// </summary>
 public class HealthCheckFunction
 {
     private readonly HealthCheckService _healthCheckService;
@@ -23,10 +20,6 @@ public class HealthCheckFunction
         _logger = logger;
     }
 
-    /// <summary>
-    /// Basic health check endpoint
-    /// GET /api/health
-    /// </summary>
     [Function("HealthCheck")]
     public async Task<HttpResponseData> HealthCheckAsync(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "health")] 
@@ -88,10 +81,6 @@ public class HealthCheckFunction
         }
     }
 
-    /// <summary>
-    /// Simple alive check endpoint
-    /// GET /api/ping
-    /// </summary>
     [Function("Ping")]
     public async Task<HttpResponseData> PingAsync(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "ping")] 

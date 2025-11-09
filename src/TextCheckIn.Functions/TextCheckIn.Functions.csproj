@@ -65,8 +65,9 @@
                           Version="12.19.1" />
         <PackageReference Include="Azure.Storage.Common"
                           Version="12.18.1" />
-        <!-- Health Checks (commented out due to dependency conflicts) -->
-        <!-- <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="$(MicrosoftExtensionsVersion)" /> -->
+        <!-- Health Checks -->
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="$(MicrosoftExtensionsVersion)" />
+        <PackageReference Include="AspNetCore.HealthChecks.SqlServer" Version="8.0.1" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\TextCheckIn.Core\TextCheckIn.Core.csproj" />

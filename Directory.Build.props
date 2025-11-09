@@ -7,7 +7,6 @@
     <WarningsAsErrors />
     <WarningsNotAsErrors>NU1605;NU1603</WarningsNotAsErrors>
     <ImplicitUsings>enable</ImplicitUsings>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Authors>Oil Changers</Authors>
     <Company>Oil Changers</Company>
     <Product>Text Check-In System</Product>

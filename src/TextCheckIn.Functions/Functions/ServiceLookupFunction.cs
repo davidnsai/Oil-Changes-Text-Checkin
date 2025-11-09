@@ -16,9 +16,6 @@ using FromBodyAttribute = Microsoft.Azure.Functions.Worker.Http.FromBodyAttribut
 
 namespace TextCheckIn.Functions.Functions;
 
-/// <summary>
-/// Azure Functions for vehicle lookup and service recommendations
-/// </summary>
 public class ServiceLookupFunction
 {
     private readonly OmniXServiceBase _omniXServiceBase;
@@ -41,10 +38,6 @@ public class ServiceLookupFunction
         _logger = logger;
     }
 
-    /// <summary>
-    /// Get vehicle recommendations by VIN
-    /// GET /api/vehicle-lookup/vin/{vin}
-    /// </summary>
     [Function("GetServiceRecommendationsByVin")]
     public async Task<HttpResponseData> GetVehicleRecommendationsByVinAsync(
         [HttpTrigger(AuthorizationLevel.Admin, "post", Route = "services/recommended/get-by-vin")] 
@@ -196,10 +189,6 @@ public class ServiceLookupFunction
         }
     }
 
-    /// <summary>
-    /// Get Power-6 service catalog
-    /// GET /api/services/power6
-    /// </summary>
     [Function("GetPowerServices")]
     public async Task<HttpResponseData> GetPowerServicesAsync(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "services/power")] 
@@ -245,10 +234,6 @@ public class ServiceLookupFunction
         }
     }
 
-    /// <summary>
-    /// Update service recommendations for a check-in
-    /// PUT /api/services/recommended
-    /// </summary>
     [Function("UpdateServiceRecommendations")]
     public async Task<HttpResponseData> UpdateServiceRecommendationsAsync(
         [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "services/recommended")] 
@@ -321,9 +306,6 @@ public class ServiceLookupFunction
         }
     }
 
-    /// <summary>
-    /// Create standardized error response
-    /// </summary>
     private static async Task<HttpResponseData> CreateErrorResponseAsync(
         HttpRequestData req, 
         HttpStatusCode statusCode, 

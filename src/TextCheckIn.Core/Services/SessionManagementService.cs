@@ -8,14 +8,8 @@ using TextCheckIn.Data.Repositories.Interfaces;
 
 namespace TextCheckIn.Core.Services
 {
-    /// <summary>
-    /// Service for managing user sessions.
-    /// </summary>
     public class SessionManagementService : ISessionManagementService
     {
-        /// <summary>
-        /// The current session.
-        /// </summary>
         public CheckInSession? CurrentSession { get; private set; }
 
         private readonly ISessionRepository _sessionRepository;
@@ -24,12 +18,6 @@ namespace TextCheckIn.Core.Services
         // configurable session timeout
         private readonly TimeSpan _sessionTimeout = TimeSpan.FromMinutes(30);
 
-        /// <summary>
-        /// Initializes a new instance of the SessionManagementService class with the specified session repository and
-        /// logger.
-        /// </summary>
-        /// <param name="sessionRepository">The repository used to store and retrieve session data</param>
-        /// <param name="logger">The logger used to record diagnostic and operational information for the service</param>
         public SessionManagementService(
             ISessionRepository sessionRepository,
             ILogger<SessionManagementService> logger)
@@ -38,10 +26,6 @@ namespace TextCheckIn.Core.Services
             _logger = logger;
         }
 
-        /// <summary>
-        /// Creates a new session.
-        /// </summary>
-        /// <returns>Session ID.</returns>
         public async Task<Guid?> CreateNewSessionAsync()
         {
             try
@@ -56,9 +40,6 @@ namespace TextCheckIn.Core.Services
             }
         }
 
-        /// <summary>
-        /// Updates the current session in the repository (e.g. when data changes).
-        /// </summary>
         public async Task UpdateSessionAsync(CheckInSession session)
         {
             try
@@ -74,13 +55,6 @@ namespace TextCheckIn.Core.Services
             }
         }
 
-
-        /// <summary>
-        /// Gets an existing session by ID without creating a new one.
-        /// Checks expiry and updates activity if valid.
-        /// </summary>
-        /// <param name="sessionId">Session ID to retrieve</param>
-        /// <returns>Session if found and valid, null otherwise</returns>
         public async Task<CheckInSession?> GetSessionAsync(Guid sessionId)
         {
             try
@@ -120,17 +94,11 @@ namespace TextCheckIn.Core.Services
             }
         }
 
-        /// <summary>
-        /// Checks if a session is expired.
-        /// </summary>
         private bool IsSessionExpired(CheckInSession session)
         {
             return DateTime.UtcNow - session.LastActivity > _sessionTimeout;
         }
 
-        /// <summary>
-        /// Creates a new session.
-        /// </summary>
         private async Task<Guid> CreateNewSession()
         {
             var newSession = new CheckInSession

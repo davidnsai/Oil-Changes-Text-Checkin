@@ -5,10 +5,6 @@ namespace TextCheckIn.Data.Seeders
 {
     public static class ServiceSeeder
     {
-        /// <summary>
-        /// Gets seed data for Power-6 services to be used with HasData in EF Core migrations
-        /// </summary>
-        /// <returns>Array of Service entities with fixed IDs for seeding</returns>
         public static Service[] GetSeedData()
         {
             // Use a fixed timestamp for consistency across migrations

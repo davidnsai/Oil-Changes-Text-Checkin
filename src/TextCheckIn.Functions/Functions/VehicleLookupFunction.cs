@@ -220,5 +220,3 @@ public class VehicleLookupFunction
     }
 }
 
-
-

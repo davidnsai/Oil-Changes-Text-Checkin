@@ -9,9 +9,6 @@ using TextCheckIn.Data.Entities;
 
 namespace TextCheckIn.Core.Services
 {
-    /// <summary>
-    /// Service for managing OTP (One-Time Password) verification
-    /// </summary>
     public class OtpService : IOtpService
     {
         private readonly ILogger<OtpService> _logger;
@@ -22,11 +19,6 @@ namespace TextCheckIn.Core.Services
         private const int MAX_ATTEMPTS = 3;
         private const int BASE_COOLDOWN_MINUTES = 2; // Initial cooldown: 2 minutes
 
-        /// <summary>
-        /// Constructor for the OtpService
-        /// </summary>
-        /// <param name="logger"></param>
-        /// <param name="sessionManagementService"></param>
         public OtpService(
             ILogger<OtpService> logger,
             ISessionManagementService sessionManagementService)
@@ -35,7 +27,6 @@ namespace TextCheckIn.Core.Services
             _sessionManagementService = sessionManagementService;
         }
 
-        /// <inheritdoc/>
         public async Task<string> GenerateOtpAsync(string phoneNumber)
         {
             // Check if session exists
@@ -174,7 +165,6 @@ namespace TextCheckIn.Core.Services
             return otpCode;
         }
 
-        /// <inheritdoc/>
         public async Task<bool> ValidateOtpAsync(string phoneNumber, string otpCode)
         {
             // Check if session exists
@@ -280,7 +270,6 @@ namespace TextCheckIn.Core.Services
             return false;
         }
 
-        /// <inheritdoc/>
         public Task<int?> GetRemainingAttemptsAsync(string phoneNumber)
         {
             // Check if session exists
@@ -332,7 +321,6 @@ namespace TextCheckIn.Core.Services
             return Task.FromResult<int?>(remaining > 0 ? remaining : 0);
         }
 
-        /// <inheritdoc/>
         public async Task ClearOtpAsync(string phoneNumber)
         {
             // Check if session exists
@@ -363,7 +351,6 @@ namespace TextCheckIn.Core.Services
             _logger.LogInformation("Cleared OTP data for phone number {PhoneNumber}", phoneNumber);
         }
 
-        /// <inheritdoc/>
         public Task<bool> IsInCooldownAsync(string phoneNumber)
         {
             // Check if session exists
@@ -414,7 +401,6 @@ namespace TextCheckIn.Core.Services
             return Task.FromResult(false);
         }
 
-        /// <inheritdoc/>
         public Task<int?> GetCooldownRemainingSecondsAsync(string phoneNumber)
         {
             // Check if session exists

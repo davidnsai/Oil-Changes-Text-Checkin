@@ -8,9 +8,6 @@ using TextCheckIn.Data.Repositories.Interfaces;
 
 namespace TextCheckIn.Data.Repositories
 {
-    /// <summary>
-    /// Repository for CustomersVehicle entity operations
-    /// </summary>
     public class CustomersVehicleRepository : ICustomersVehicleRepository
     {
         private readonly AppDbContext _context;
@@ -22,7 +19,6 @@ namespace TextCheckIn.Data.Repositories
             _logger = logger;
         }
 
-        /// <inheritdoc/>
         public async Task<CustomersVehicle?> GetByCustomerAndVehicleAsync(int customerId, int vehicleId)
         {
             try
@@ -39,7 +35,6 @@ namespace TextCheckIn.Data.Repositories
             }
         }
 
-        /// <inheritdoc/>
         public async Task<CustomersVehicle> CreateAsync(CustomersVehicle customersVehicle)
         {
             try
@@ -62,7 +57,6 @@ namespace TextCheckIn.Data.Repositories
             }
         }
 
-        /// <inheritdoc/>
         public async Task<bool> ExistsAsync(int customerId, int vehicleId)
         {
             try

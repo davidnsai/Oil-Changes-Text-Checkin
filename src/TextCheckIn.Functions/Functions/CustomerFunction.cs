@@ -11,9 +11,6 @@ using TextCheckIn.Functions.Models.Responses;
 
 namespace TextCheckIn.Functions.Functions
 {
-    /// <summary>
-    /// Azure Functions for customer management
-    /// </summary>
     public class CustomerFunction
     {
         private readonly ICustomerRepository _customerRepository;
@@ -30,10 +27,6 @@ namespace TextCheckIn.Functions.Functions
             _logger = logger;
         }
 
-        /// <summary>
-        /// Retrieves customer details
-        /// GET /api/customer
-        /// </summary>
         [Function("GetCustomer")]
         public async Task<HttpResponseData> GetCustomerAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "customer")]
@@ -121,10 +114,6 @@ namespace TextCheckIn.Functions.Functions
             }
         }
 
-        /// <summary>
-        /// Updates customer details
-        /// PUT /api/customer
-        /// </summary>
         [Function("UpdateCustomer")]
         public async Task<HttpResponseData> UpdateCustomerAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "customer")]

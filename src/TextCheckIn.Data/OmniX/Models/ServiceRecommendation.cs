@@ -1,8 +1,5 @@
 ﻿namespace TextCheckIn.Data.OmniX.Models;
 
-/// <summary>
-/// Represents the services recommended by OmniX for a particular vehicle.
-/// </summary>
 public class ServiceRecommendation : OmniXVehicleRequest
 {
     public Guid Id { get; set; }

@@ -7,10 +7,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace TextCheckIn.Data.Migrations
 {
-    /// <inheritdoc />
     public partial class InitialSQLServerMigration : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
@@ -377,7 +375,6 @@ namespace TextCheckIn.Data.Migrations
                 filter: "[vin] IS NOT NULL");
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(

@@ -1,8 +1,5 @@
 ﻿namespace TextCheckIn.Data.OmniX.Models;
 
-/// <summary>
-/// Represents a work order for a particular vehicle.
-/// </summary>
 public class WorkOrder : OmniXVehicleRequest
 {
     public Guid RecommendationId { get; set; }

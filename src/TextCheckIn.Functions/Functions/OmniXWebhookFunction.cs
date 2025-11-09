@@ -11,9 +11,6 @@ using TextCheckIn.Functions.Models.Responses;
 
 namespace TextCheckIn.Functions.Functions;
 
-/// <summary>
-/// Azure Function for receiving omniX webhook notifications
-/// </summary>
 public class OmniXWebhookFunction
 {
     private readonly OmniXServiceBase _omniXServiceBase;
@@ -30,10 +27,6 @@ public class OmniXWebhookFunction
         _logger = logger;
     }
 
-    /// <summary>
-    /// Receives and processes omniX webhook notifications
-    /// Implements custom authentication and signature validation
-    /// </summary>
     [Function("OmniXWebhook")]
     public async Task<HttpResponseData> RunAsync(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "webhook/omnix")]
@@ -101,9 +94,6 @@ public class OmniXWebhookFunction
         }
     }
 
-    /// <summary>
-    /// Validates webhook request including signature and timestamp verification
-    /// </summary>
     private async Task<WebhookValidationResult> ValidateWebhookRequestAsync(
         HttpRequestData req,
         string requestId)
@@ -162,9 +152,6 @@ public class OmniXWebhookFunction
         }
     }
 
-    /// <summary>
-    /// Parse serviceRecommendation payload into typed object
-    /// </summary>
     private Task<ServiceRecommendation?> ParseServiceRecommendationPayloadAsync(string payload, string requestId)
     {
         try
@@ -204,18 +191,12 @@ public class OmniXWebhookFunction
         }
     }
 
-    /// <summary>
-    /// Read request body as string
-    /// </summary>
     private static async Task<string> ReadRequestBodyAsync(HttpRequestData req)
     {
         using var reader = new StreamReader(req.Body, Encoding.UTF8);
         return await reader.ReadToEndAsync();
     }
 
-    /// <summary>
-    /// Create standardized error response
-    /// </summary>
     private static async Task<HttpResponseData> CreateErrorResponseAsync(
         HttpRequestData req,
         HttpStatusCode statusCode,
@@ -234,9 +215,6 @@ public class OmniXWebhookFunction
     }
 }
 
-/// <summary>
-/// Result of webhook validation
-/// </summary>
 internal class WebhookValidationResult
 {
     public bool IsValid { get; private set; }
