@@ -15,6 +15,8 @@ using Microsoft.EntityFrameworkCore;
 using TextCheckIn.Data.Repositories;
 using TextCheckIn.Data.Repositories.Interfaces;
 using TextCheckIn.Functions.Middleware;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using System.Net.Http.Headers;
 
 var host = new HostBuilder()
     .ConfigureFunctionsWorkerDefaults(workerApp =>
@@ -105,7 +107,7 @@ var host = new HostBuilder()
 
             if (!string.IsNullOrEmpty(omniXConfig?.ApiKey))
             {
-                client.DefaultRequestHeaders.Add("X-API-Key", omniXConfig.ApiKey);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", omniXConfig.ApiKey);
             }
         });
 
@@ -128,6 +130,20 @@ var host = new HostBuilder()
         services.AddHttpClient<ISmsService, SmsService>();
 
         services.AddScoped<IOtpService, OtpService>();
+
+        // Add Health Checks
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var healthChecksBuilder = services.AddHealthChecks()
+            .AddCheck("self", () => HealthCheckResult.Healthy("Service is running"));
+
+        if (!string.IsNullOrEmpty(connectionString))
+        {
+            healthChecksBuilder.AddSqlServer(
+                connectionString,
+                name: "database",
+                failureStatus: HealthStatus.Unhealthy,
+                tags: new[] { "db", "sql", "sqlserver" });
+        }
     })
     .Build();
 
