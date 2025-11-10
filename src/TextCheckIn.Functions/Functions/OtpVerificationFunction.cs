@@ -270,7 +270,30 @@ namespace TextCheckIn.Functions.Functions
                     });
                     return badResponse;
                 }
+                
+                // check if the phone number is masked
+                if (request.PhoneNumber.StartsWith("(XXX)"))
+                {
+                    // get the actual phone number from the session
+                    var sessionPayload = _sessionManagementService.GetCurrentSessionPayload();
+                    if (sessionPayload == null)
+                    {
+                        var badResponse = req.CreateResponse(HttpStatusCode.Unauthorized);
+                        await badResponse.WriteAsJsonAsync(new ApiResponse<object>
+                        {
+                            Success = false,
+                            Data = null,
+                            Error = "You are not authorized to perform this action",
+                            Timestamp = DateTime.UtcNow,
+                            RequestId = requestId,
+                            SessionId = _sessionManagementService.CurrentSession?.Id.ToString() ?? string.Empty
+                        });
+                        return badResponse;
+                    }
+                    request.PhoneNumber = sessionPayload.OtpData?.PhoneNumber ?? string.Empty;
+                }
 
+                
                 // Normalize phone number
                 var normalizedPhone = PhoneNumberHelper.FormatToE164(request.PhoneNumber);
                 if (string.IsNullOrEmpty(normalizedPhone))

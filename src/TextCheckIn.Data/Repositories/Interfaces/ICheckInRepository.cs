@@ -20,27 +20,5 @@ namespace TextCheckIn.Data.Repositories.Interfaces
         Task<CheckIn?> GetCheckInByUuidAsync(Guid uuid);
         
         Task<CheckIn> UpdateCheckInAsync(CheckIn checkIn);
-
-        // <summary>
-        // Get active session by phone number and store ID
-        // </summary>
-        //Task<CheckInSession?> GetActiveSessionByPhoneAsync(
-        //    string phoneNumber, 
-        //    string storeId, 
-        //    CancellationToken cancellationToken = default);
-
-        // <summary>
-        // Save check-in session
-        // </summary>
-        //Task<CheckInSession> SaveSessionAsync(
-        //    CheckInSession session,
-        //    CancellationToken cancellationToken = default);
-
-        // <summary>
-        // Update check-in session
-        // </summary>
-        //Task<CheckInSession> UpdateSessionAsync(
-        //    CheckInSession session, 
-        //    CancellationToken cancellationToken = default);
     }
 }

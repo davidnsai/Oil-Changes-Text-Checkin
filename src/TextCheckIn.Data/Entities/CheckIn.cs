@@ -24,6 +24,7 @@ public class CheckIn
     public bool IsProcessed { get; set; }
     
     public int? EstimatedMileage { get; set; }
+    public int? ActualMileage { get; set; }
     
     public DateTime DateTime { get; set; }
 

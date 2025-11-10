@@ -13,18 +13,18 @@ namespace TextCheckIn.Data.Repositories
             _context = context;
         }
 
-        public async Task<CheckInSession?> GetSessionAsync(Guid? sessionId)
+        public async Task<Sessions?> GetSessionAsync(Guid? sessionId)
         {
             return await _context.CheckInSessions.FindAsync(sessionId);
         }
 
-        public async Task CreateSessionAsync(CheckInSession session)
+        public async Task CreateSessionAsync(Sessions session)
         {
             _context.CheckInSessions.Add(session);
             await _context.SaveChangesAsync();
         }
 
-        public async Task UpdateSessionAsync(CheckInSession session)
+        public async Task UpdateSessionAsync(Sessions session)
         {
             _context.CheckInSessions.Update(session);
             await _context.SaveChangesAsync();

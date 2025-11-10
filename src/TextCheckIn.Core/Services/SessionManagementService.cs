@@ -2,6 +2,7 @@
 using System;
 using System.Text.Json;
 using System.Threading.Tasks;
+using TextCheckIn.Core.Models.Domain;
 using TextCheckIn.Core.Services.Interfaces;
 using TextCheckIn.Data.Entities;
 using TextCheckIn.Data.Repositories.Interfaces;
@@ -10,7 +11,7 @@ namespace TextCheckIn.Core.Services
 {
     public class SessionManagementService : ISessionManagementService
     {
-        public CheckInSession? CurrentSession { get; private set; }
+        public Sessions? CurrentSession { get; private set; }
 
         private readonly ISessionRepository _sessionRepository;
         private readonly ILogger<SessionManagementService> _logger;
@@ -29,8 +30,8 @@ namespace TextCheckIn.Core.Services
         public async Task<Guid?> CreateNewSessionAsync()
         {
             try
-            {             
-               // create new session
+            {
+                // create new session
                 return await CreateNewSession();
             }
             catch (Exception ex)
@@ -40,7 +41,7 @@ namespace TextCheckIn.Core.Services
             }
         }
 
-        public async Task UpdateSessionAsync(CheckInSession session)
+        public async Task UpdateSessionAsync(Sessions session)
         {
             try
             {
@@ -55,12 +56,39 @@ namespace TextCheckIn.Core.Services
             }
         }
 
-        public async Task<CheckInSession?> GetSessionAsync(Guid sessionId)
+        /// <summary>
+        /// Updates the current session's payload using a provided action.
+        /// This method handles deserialization, update, and serialization of the payload.
+        /// </summary>
+        /// <param name="updateAction">The action to perform on the session payload.</param>
+        public async Task UpdateSessionAsync(Action<SessionPayload> updateAction)
+        {
+            if (CurrentSession == null)
+            {
+                _logger.LogWarning("Cannot update session because there is no current session.");
+                return;
+            }
+
+            try
+            {
+                var payload = JsonSerializer.Deserialize<SessionPayload>(CurrentSession.Payload) ?? new SessionPayload();
+                updateAction(payload);
+                CurrentSession.Payload = JsonSerializer.Serialize(payload);
+                await UpdateSessionAsync(CurrentSession);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating session payload for session {SessionId}", CurrentSession.Id);
+                throw;
+            }
+        }
+
+        public async Task<Sessions?> GetSessionAsync(Guid sessionId)
         {
             try
             {
                 var session = await _sessionRepository.GetSessionAsync(sessionId);
-                
+
                 if (session == null)
                 {
                     _logger.LogInformation("Session {SessionId} not found", sessionId);
@@ -83,7 +111,7 @@ namespace TextCheckIn.Core.Services
                 session.LastActivity = DateTime.UtcNow;
                 await UpdateSessionAsync(session);
                 CurrentSession = session;
-                
+
                 _logger.LogDebug("Session {SessionId} retrieved and validated", sessionId);
                 return session;
             }
@@ -94,14 +122,14 @@ namespace TextCheckIn.Core.Services
             }
         }
 
-        private bool IsSessionExpired(CheckInSession session)
+        private bool IsSessionExpired(Sessions session)
         {
             return DateTime.UtcNow - session.LastActivity > _sessionTimeout;
         }
 
         private async Task<Guid> CreateNewSession()
         {
-            var newSession = new CheckInSession
+            var newSession = new Sessions
             {
                 Id = Guid.NewGuid(),
                 LastActivity = DateTime.UtcNow,
@@ -116,5 +144,50 @@ namespace TextCheckIn.Core.Services
             return newSession.Id;
         }
 
+        public SessionPayload? GetCurrentSessionPayload()
+        {
+            if (CurrentSession == null)
+            {
+                _logger.LogDebug("No current session available to retrieve payload");
+                return null;
+            }
+
+            // Check if the current session has expired
+            if (IsSessionExpired(CurrentSession))
+            {
+                _logger.LogInformation(
+                    "Current session {SessionId} has expired, cannot retrieve payload",
+                    CurrentSession.Id);
+
+                CurrentSession = null;
+                return null;
+            }
+
+            if (string.IsNullOrEmpty(CurrentSession.Payload))
+            {
+                _logger.LogDebug("Current session {SessionId} has empty payload", CurrentSession.Id);
+                return new SessionPayload();
+            }
+
+            try
+            {
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    WriteIndented = false
+                };
+
+                var payload = JsonSerializer.Deserialize<SessionPayload>(
+                    CurrentSession.Payload, options);
+
+                _logger.LogDebug("Payload retrieved for current session {SessionId}", CurrentSession.Id);
+                return payload ?? new SessionPayload();
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Error deserializing payload for session {SessionId}", CurrentSession.Id);
+                return null;
+            }
+        }
     }
 }

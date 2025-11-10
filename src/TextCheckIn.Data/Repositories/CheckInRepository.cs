@@ -28,8 +28,8 @@ namespace TextCheckIn.Data.Repositories
         {
             return _context.CheckIns
                 .Include(c => c.Vehicle)
-                .Include(c => c.CheckInServices)
-                    .ThenInclude(cs => cs.Service)
+                // .Include(c => c.CheckInServices)
+                //     .ThenInclude(cs => cs.Service)
                 .Where(c => !c.IsProcessed)
                 .OrderByDescending(c => c.CreatedAt)
                 .ToList();

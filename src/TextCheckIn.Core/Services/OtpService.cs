@@ -1,11 +1,10 @@
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading.Tasks;
+using TextCheckIn.Core.Models.Domain;
 using TextCheckIn.Core.Services.Interfaces;
-using TextCheckIn.Data.Entities;
 
 namespace TextCheckIn.Core.Services
 {
@@ -27,12 +26,11 @@ namespace TextCheckIn.Core.Services
             _sessionManagementService = sessionManagementService;
         }
 
-        public async Task<string> GenerateOtpAsync(string phoneNumber)
+        private SessionPayload GetSessionPayload()
         {
-            // Check if session exists
-            if (_sessionManagementService.CurrentSession == null)
+            if (string.IsNullOrEmpty(_sessionManagementService.CurrentSession?.Payload))
             {
-                throw new InvalidOperationException("No active session found. OTP generation requires an active session.");
+                return new SessionPayload();
             }
 
             var options = new JsonSerializerOptions
@@ -41,77 +39,56 @@ namespace TextCheckIn.Core.Services
                 WriteIndented = false
             };
 
-            // Parse existing payload or create new
-            var payloadData = string.IsNullOrEmpty(_sessionManagementService.CurrentSession.Payload)
-                ? new Dictionary<string, object>()
-                : JsonSerializer.Deserialize<Dictionary<string, object>>(_sessionManagementService.CurrentSession.Payload, options) ?? new Dictionary<string, object>();
+            return JsonSerializer.Deserialize<SessionPayload>(
+                _sessionManagementService.CurrentSession.Payload, options) ?? new SessionPayload();
+        }
+
+        private async Task SaveSessionPayloadAsync(SessionPayload payload)
+        {
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = false
+            };
+
+            _sessionManagementService.CurrentSession!.Payload = JsonSerializer.Serialize(payload, options);
+            await _sessionManagementService.UpdateSessionAsync(_sessionManagementService.CurrentSession);
+        }
+
+        public async Task<string> GenerateOtpAsync(string phoneNumber)
+        {
+            // Check if session exists
+            if (_sessionManagementService.CurrentSession == null)
+            {
+                throw new InvalidOperationException("No active session found. OTP generation requires an active session.");
+            }
+
+            var payload = GetSessionPayload();
 
             // Check for existing cooldown data
-            if (payloadData.ContainsKey("otpCooldown"))
+            if (payload.OtpCooldown != null &&
+                payload.OtpCooldown.PhoneNumber == phoneNumber &&
+                DateTime.UtcNow < payload.OtpCooldown.CooldownUntil)
             {
-                var cooldownData = payloadData["otpCooldown"] as JsonElement?;
-                if (cooldownData.HasValue)
-                {
-                    var cooldownElement = cooldownData.Value;
-
-                    // Check if cooldown is for the correct phone number
-                    if (cooldownElement.TryGetProperty("phoneNumber", out var cooldownPhoneElement) &&
-                        cooldownPhoneElement.GetString() == phoneNumber)
-                    {
-                        // Check if still in cooldown period
-                        if (cooldownElement.TryGetProperty("cooldownUntil", out var cooldownUntilElement))
-                        {
-                            if (DateTime.TryParse(cooldownUntilElement.GetString(), out var cooldownUntil) &&
-                                DateTime.UtcNow < cooldownUntil)
-                            {
-                                var remainingSeconds = (int)(cooldownUntil - DateTime.UtcNow).TotalSeconds;
-                                _logger.LogWarning("Phone number {PhoneNumber} is in cooldown for {RemainingSeconds} more seconds",
-                                    phoneNumber, remainingSeconds);
-                                throw new InvalidOperationException($"Please wait {remainingSeconds} seconds before requesting another OTP");
-                            }
-                        }
-                    }
-                }
+                var remainingSeconds = (int)(payload.OtpCooldown.CooldownUntil - DateTime.UtcNow).TotalSeconds;
+                _logger.LogWarning("Phone number {PhoneNumber} is in cooldown for {RemainingSeconds} more seconds",
+                    phoneNumber, remainingSeconds);
+                throw new InvalidOperationException($"Please wait {remainingSeconds} seconds before requesting another OTP");
             }
 
             // Check for duplicate OTP request (same phone number, OTP still valid)
-            if (payloadData.ContainsKey("otpData"))
+            if (payload.OtpData != null &&
+                payload.OtpData.PhoneNumber == phoneNumber &&
+                DateTime.UtcNow < payload.OtpData.OtpExpiry)
             {
-                var existingOtpData = payloadData["otpData"] as JsonElement?;
-                if (existingOtpData.HasValue)
-                {
-                    var otpElement = existingOtpData.Value;
-
-                    // Check if OTP is for the same phone number
-                    if (otpElement.TryGetProperty("phoneNumber", out var phoneElement) &&
-                        phoneElement.GetString() == phoneNumber)
-                    {
-                        // Check if OTP is still valid (not expired)
-                        if (otpElement.TryGetProperty("otpExpiry", out var expiryElement))
-                        {
-                            if (DateTime.TryParse(expiryElement.GetString(), out var expiry) &&
-                                DateTime.UtcNow < expiry)
-                            {
-                                var remainingSeconds = (int)(expiry - DateTime.UtcNow).TotalSeconds;
-                                _logger.LogWarning("Duplicate OTP request for phone number {PhoneNumber}. Existing OTP still valid for {RemainingSeconds} seconds",
-                                    phoneNumber, remainingSeconds);
-                                throw new InvalidOperationException($"An OTP was already sent. Please wait {remainingSeconds} seconds before requesting a new one");
-                            }
-                        }
-                    }
-                }
+                var remainingSeconds = (int)(payload.OtpData.OtpExpiry - DateTime.UtcNow).TotalSeconds;
+                _logger.LogWarning("Duplicate OTP request for phone number {PhoneNumber}. Existing OTP still valid for {RemainingSeconds} seconds",
+                    phoneNumber, remainingSeconds);
+                throw new InvalidOperationException($"An OTP was already sent. Please wait {remainingSeconds} seconds before requesting a new one");
             }
 
             // Get send count to calculate cooldown
-            int sendCount = 0;
-            if (payloadData.ContainsKey("otpSendCount"))
-            {
-                var sendCountData = payloadData["otpSendCount"] as JsonElement?;
-                if (sendCountData.HasValue && sendCountData.Value.TryGetProperty("count", out var countElement))
-                {
-                    sendCount = countElement.TryGetInt32(out var count) ? count : 0;
-                }
-            }
+            int sendCount = payload.OtpSendCount?.Count ?? 0;
 
             // Generate a random 6-digit OTP
             using var rng = RandomNumberGenerator.Create();
@@ -124,24 +101,22 @@ namespace TextCheckIn.Core.Services
             var otpExpiry = now.AddMinutes(OTP_EXPIRY_MINUTES);
 
             // Store OTP data in session payload
-            var otpData = new
+            payload.OtpData = new OtpData
             {
-                phoneNumber,
-                otpCode,
-                otpGenerated = now,
-                otpExpiry = otpExpiry,
-                attempts = 0 // Start at 0, will increment on first validation attempt
+                PhoneNumber = phoneNumber,
+                OtpCode = otpCode,
+                OtpGenerated = now,
+                OtpExpiry = otpExpiry,
+                Attempts = 0 // Start at 0, will increment on first validation attempt
             };
-
-            payloadData["otpData"] = otpData;
 
             // Increment send count
             sendCount++;
-            payloadData["otpSendCount"] = new
+            payload.OtpSendCount = new OtpSendCount
             {
-                phoneNumber,
-                count = sendCount,
-                lastSendTime = now
+                PhoneNumber = phoneNumber,
+                Count = sendCount,
+                LastSendTime = now
             };
 
             // Calculate cooldown: 2 minutes * 2^(sendCount-1)
@@ -149,15 +124,14 @@ namespace TextCheckIn.Core.Services
             var cooldownMinutes = BASE_COOLDOWN_MINUTES * Math.Pow(2, sendCount - 1);
             var nextCooldownUntil = now.AddMinutes(cooldownMinutes);
 
-            payloadData["otpCooldown"] = new
+            payload.OtpCooldown = new OtpCooldown
             {
-                phoneNumber,
-                cooldownUntil = nextCooldownUntil,
-                sendCount = sendCount
+                PhoneNumber = phoneNumber,
+                CooldownUntil = nextCooldownUntil,
+                SendCount = sendCount
             };
 
-            _sessionManagementService.CurrentSession.Payload = JsonSerializer.Serialize(payloadData, options);
-            await _sessionManagementService.UpdateSessionAsync(_sessionManagementService.CurrentSession);
+            await SaveSessionPayloadAsync(payload);
 
             _logger.LogInformation("Generated OTP for phone number {PhoneNumber}. Send count: {SendCount}, Next cooldown: {CooldownMinutes} minutes",
                 phoneNumber, sendCount, cooldownMinutes);
@@ -174,86 +148,42 @@ namespace TextCheckIn.Core.Services
                 return false;
             }
 
-            // Get OTP data from session payload
-            var options = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                WriteIndented = false
-            };
+            var payload = GetSessionPayload();
 
-            var payloadData = string.IsNullOrEmpty(_sessionManagementService.CurrentSession.Payload)
-                ? new Dictionary<string, object>()
-                : JsonSerializer.Deserialize<Dictionary<string, object>>(_sessionManagementService.CurrentSession.Payload, options) ?? new Dictionary<string, object>();
-
-            if (!payloadData.ContainsKey("otpData"))
+            if (payload.OtpData == null)
             {
                 _logger.LogWarning("No OTP found for phone number {PhoneNumber}", phoneNumber);
                 return false;
             }
 
-            var otpData = payloadData["otpData"] as JsonElement?;
-            if (!otpData.HasValue)
-            {
-                _logger.LogWarning("Invalid OTP data in session for phone number {PhoneNumber}", phoneNumber);
-                return false;
-            }
-
-            var otpElement = otpData.Value;
-
             // Check if OTP is for the correct phone number
-            if (!otpElement.TryGetProperty("phoneNumber", out var phoneNumberElement) ||
-                phoneNumberElement.GetString() != phoneNumber)
+            if (payload.OtpData.PhoneNumber != phoneNumber)
             {
                 _logger.LogWarning("OTP phone number mismatch for {PhoneNumber}", phoneNumber);
                 return false;
             }
 
             // Check if OTP has expired
-            if (otpElement.TryGetProperty("otpExpiry", out var expiryElement))
+            if (DateTime.UtcNow > payload.OtpData.OtpExpiry)
             {
-                if (DateTime.TryParse(expiryElement.GetString(), out var expiry) && DateTime.UtcNow > expiry)
-                {
-                    _logger.LogWarning("OTP has expired for phone number {PhoneNumber}", phoneNumber);
-                    await ClearOtpAsync(phoneNumber);
-                    return false;
-                }
-            }
-
-            // Get current attempts
-            var attempts = 0;
-            if (otpElement.TryGetProperty("attempts", out var attemptsElement) &&
-                attemptsElement.TryGetInt32(out var parsedAttempts))
-            {
-                attempts = parsedAttempts;
+                _logger.LogWarning("OTP has expired for phone number {PhoneNumber}", phoneNumber);
+                await ClearOtpAsync(phoneNumber);
+                return false;
             }
 
             // Check if max attempts exceeded
-            if (attempts >= MAX_ATTEMPTS)
+            if (payload.OtpData.Attempts >= MAX_ATTEMPTS)
             {
                 _logger.LogWarning("Max OTP attempts exceeded for phone number {PhoneNumber}", phoneNumber);
                 return false;
             }
 
             // Increment attempts
-            attempts++;
-
-            // Update the OTP data with new attempts count
-            var updatedOtpData = new
-            {
-                phoneNumber = otpElement.GetProperty("phoneNumber").GetString(),
-                otpCode = otpElement.GetProperty("otpCode").GetString(),
-                otpGenerated = otpElement.GetProperty("otpGenerated").GetDateTime(),
-                otpExpiry = otpElement.GetProperty("otpExpiry").GetDateTime(),
-                attempts = attempts
-            };
-
-            payloadData["otpData"] = updatedOtpData;
-            _sessionManagementService.CurrentSession.Payload = JsonSerializer.Serialize(payloadData, options);
-            await _sessionManagementService.UpdateSessionAsync(_sessionManagementService.CurrentSession);
+            payload.OtpData.Attempts++;
+            await SaveSessionPayloadAsync(payload);
 
             // Validate OTP
-            var storedOtp = otpElement.TryGetProperty("otpCode", out var otpCodeElement) ? otpCodeElement.GetString() : null;
-            if (storedOtp == otpCode)
+            if (payload.OtpData.OtpCode == otpCode)
             {
                 _logger.LogInformation("OTP validated successfully for phone number {PhoneNumber}", phoneNumber);
                 // Clear OTP after successful validation
@@ -264,7 +194,7 @@ namespace TextCheckIn.Core.Services
             _logger.LogWarning(
                 "Invalid OTP attempt for phone number {PhoneNumber}. Attempt {Attempt}/{MaxAttempts}",
                 phoneNumber,
-                attempts,
+                payload.OtpData.Attempts,
                 MAX_ATTEMPTS);
 
             return false;
@@ -278,46 +208,14 @@ namespace TextCheckIn.Core.Services
                 return Task.FromResult<int?>(null);
             }
 
-            // Get OTP data from session payload
-            var options = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                WriteIndented = false
-            };
+            var payload = GetSessionPayload();
 
-            var payloadData = string.IsNullOrEmpty(_sessionManagementService.CurrentSession.Payload)
-                ? new Dictionary<string, object>()
-                : JsonSerializer.Deserialize<Dictionary<string, object>>(_sessionManagementService.CurrentSession.Payload, options) ?? new Dictionary<string, object>();
-
-            if (!payloadData.ContainsKey("otpData"))
+            if (payload.OtpData == null || payload.OtpData.PhoneNumber != phoneNumber)
             {
                 return Task.FromResult<int?>(null);
             }
 
-            var otpData = payloadData["otpData"] as JsonElement?;
-            if (!otpData.HasValue)
-            {
-                return Task.FromResult<int?>(null);
-            }
-
-            var otpElement = otpData.Value;
-
-            // Check if OTP is for the correct phone number
-            if (!otpElement.TryGetProperty("phoneNumber", out var phoneNumberElement) ||
-                phoneNumberElement.GetString() != phoneNumber)
-            {
-                return Task.FromResult<int?>(null);
-            }
-
-            // Get current attempts
-            var attempts = 0;
-            if (otpElement.TryGetProperty("attempts", out var attemptsElement) &&
-                attemptsElement.TryGetInt32(out var parsedAttempts))
-            {
-                attempts = parsedAttempts;
-            }
-
-            var remaining = MAX_ATTEMPTS - attempts;
+            var remaining = MAX_ATTEMPTS - payload.OtpData.Attempts;
             return Task.FromResult<int?>(remaining > 0 ? remaining : 0);
         }
 
@@ -330,22 +228,12 @@ namespace TextCheckIn.Core.Services
                 return;
             }
 
-            // Clear OTP data from session
-            var options = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                WriteIndented = false
-            };
+            var payload = GetSessionPayload();
 
-            var payloadData = string.IsNullOrEmpty(_sessionManagementService.CurrentSession.Payload)
-                ? new Dictionary<string, object>()
-                : JsonSerializer.Deserialize<Dictionary<string, object>>(_sessionManagementService.CurrentSession.Payload, options) ?? new Dictionary<string, object>();
-
-            if (payloadData.ContainsKey("otpData"))
+            if (payload.OtpData != null)
             {
-                payloadData.Remove("otpData");
-                _sessionManagementService.CurrentSession.Payload = JsonSerializer.Serialize(payloadData, options);
-                await _sessionManagementService.UpdateSessionAsync(_sessionManagementService.CurrentSession);
+                payload.OtpData = null;
+                await SaveSessionPayloadAsync(payload);
             }
 
             _logger.LogInformation("Cleared OTP data for phone number {PhoneNumber}", phoneNumber);
@@ -359,46 +247,14 @@ namespace TextCheckIn.Core.Services
                 return Task.FromResult(false);
             }
 
-            var options = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                WriteIndented = false
-            };
+            var payload = GetSessionPayload();
 
-            var payloadData = string.IsNullOrEmpty(_sessionManagementService.CurrentSession.Payload)
-                ? new Dictionary<string, object>()
-                : JsonSerializer.Deserialize<Dictionary<string, object>>(_sessionManagementService.CurrentSession.Payload, options) ?? new Dictionary<string, object>();
-
-            if (!payloadData.ContainsKey("otpCooldown"))
+            if (payload.OtpCooldown == null || payload.OtpCooldown.PhoneNumber != phoneNumber)
             {
                 return Task.FromResult(false);
             }
 
-            var cooldownData = payloadData["otpCooldown"] as JsonElement?;
-            if (!cooldownData.HasValue)
-            {
-                return Task.FromResult(false);
-            }
-
-            var cooldownElement = cooldownData.Value;
-
-            // Check if cooldown is for the correct phone number
-            if (!cooldownElement.TryGetProperty("phoneNumber", out var phoneElement) ||
-                phoneElement.GetString() != phoneNumber)
-            {
-                return Task.FromResult(false);
-            }
-
-            // Check if still in cooldown period
-            if (cooldownElement.TryGetProperty("cooldownUntil", out var cooldownUntilElement))
-            {
-                if (DateTime.TryParse(cooldownUntilElement.GetString(), out var cooldownUntil))
-                {
-                    return Task.FromResult(DateTime.UtcNow < cooldownUntil);
-                }
-            }
-
-            return Task.FromResult(false);
+            return Task.FromResult(DateTime.UtcNow < payload.OtpCooldown.CooldownUntil);
         }
 
         public Task<int?> GetCooldownRemainingSecondsAsync(string phoneNumber)
@@ -409,47 +265,17 @@ namespace TextCheckIn.Core.Services
                 return Task.FromResult<int?>(null);
             }
 
-            var options = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                WriteIndented = false
-            };
+            var payload = GetSessionPayload();
 
-            var payloadData = string.IsNullOrEmpty(_sessionManagementService.CurrentSession.Payload)
-                ? new Dictionary<string, object>()
-                : JsonSerializer.Deserialize<Dictionary<string, object>>(_sessionManagementService.CurrentSession.Payload, options) ?? new Dictionary<string, object>();
-
-            if (!payloadData.ContainsKey("otpCooldown"))
+            if (payload.OtpCooldown == null || payload.OtpCooldown.PhoneNumber != phoneNumber)
             {
                 return Task.FromResult<int?>(null);
             }
 
-            var cooldownData = payloadData["otpCooldown"] as JsonElement?;
-            if (!cooldownData.HasValue)
+            var remaining = (payload.OtpCooldown.CooldownUntil - DateTime.UtcNow).TotalSeconds;
+            if (remaining > 0)
             {
-                return Task.FromResult<int?>(null);
-            }
-
-            var cooldownElement = cooldownData.Value;
-
-            // Check if cooldown is for the correct phone number
-            if (!cooldownElement.TryGetProperty("phoneNumber", out var phoneElement) ||
-                phoneElement.GetString() != phoneNumber)
-            {
-                return Task.FromResult<int?>(null);
-            }
-
-            // Check if still in cooldown period
-            if (cooldownElement.TryGetProperty("cooldownUntil", out var cooldownUntilElement))
-            {
-                if (DateTime.TryParse(cooldownUntilElement.GetString(), out var cooldownUntil))
-                {
-                    var remaining = (cooldownUntil - DateTime.UtcNow).TotalSeconds;
-                    if (remaining > 0)
-                    {
-                        return Task.FromResult<int?>((int)Math.Ceiling(remaining));
-                    }
-                }
+                return Task.FromResult<int?>((int)Math.Ceiling(remaining));
             }
 
             return Task.FromResult<int?>(null);

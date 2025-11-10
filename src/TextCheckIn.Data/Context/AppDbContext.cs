@@ -8,7 +8,7 @@ public class AppDbContext : DbContext
     public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options) { }
 
-    public DbSet<CheckInSession> CheckInSessions { get; set; }
+    public DbSet<Sessions> CheckInSessions { get; set; }
     public DbSet<Customer> Customers { get; set; }
     public DbSet<Service> Services { get; set; }
     public DbSet<CheckIn> CheckIns { get; set; }
@@ -23,7 +23,7 @@ public class AppDbContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         // Configure table names
-        modelBuilder.Entity<CheckInSession>().ToTable("check_in_sessions");
+        modelBuilder.Entity<Sessions>().ToTable("sessions");
         modelBuilder.Entity<Customer>().ToTable("customers");
         modelBuilder.Entity<Service>().ToTable("services");
         modelBuilder.Entity<CheckIn>().ToTable("check_ins");
@@ -34,7 +34,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<StateCode>().ToTable("state_codes");
 
         // Configure CheckInSession entity
-        modelBuilder.Entity<CheckInSession>(entity =>
+        modelBuilder.Entity<Sessions>(entity =>
         {
             entity.Property(e => e.Id)
                 .HasColumnName("id");
@@ -117,6 +117,9 @@ public class AppDbContext : DbContext
 
             entity.Property(e => e.EstimatedMileage)
                 .HasColumnName("estimated_mileage");
+
+            entity.Property(e => e.ActualMileage)
+                  .HasColumnName("actual_mileage");
 
             entity.Property(e => e.DateTime)
                 .HasColumnName("datetime");
@@ -279,7 +282,8 @@ public class AppDbContext : DbContext
                 .HasColumnName("description");
 
             entity.Property(e => e.Price)
-                .HasColumnName("price");
+                .HasColumnName("price")
+                .HasPrecision(18, 2);
             
             entity.Property(e => e.EstimatedDurationMinutes)
                 .HasColumnName("estimated_duration_minutes");

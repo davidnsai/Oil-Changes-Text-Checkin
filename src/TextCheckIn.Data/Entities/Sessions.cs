@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 
 namespace TextCheckIn.Data.Entities
-{    public class CheckInSession
+{    public class Sessions
     {
         [Key]
         public Guid Id { get; set; }

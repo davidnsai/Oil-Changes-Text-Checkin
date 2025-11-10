@@ -67,7 +67,6 @@ namespace TextCheckIn.Data.Repositories
         {
             return _context.Vehicles
                 .Include(v => v.CheckIns)
-                    .ThenInclude(c => c.Customer)
                 .Include(v => v.CustomersVehicles)
                     .ThenInclude(cv => cv.Customer)
                 .FirstOrDefault(v => 

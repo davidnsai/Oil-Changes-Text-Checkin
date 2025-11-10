@@ -31,32 +31,20 @@ public class VehicleLookupFunction
 
     [Function("GetVehicleByLicensePlate")]
     public async Task<HttpResponseData> GetVehicleByLicensePlateAsync(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "vehicle-lookup/license-plate/{licensePlate}/{stateCode}")] HttpRequestData req,
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "vehicle-lookup/license-plate/{licensePlate}/{stateCode}/{checkInId}")] HttpRequestData req,
         string licensePlate,
-        string stateCode)
+        string stateCode,
+        Guid checkInId)
     {
         var requestId = Guid.NewGuid().ToString()[..8];
 
         try
         {
-            if (string.IsNullOrWhiteSpace(licensePlate) || string.IsNullOrWhiteSpace(stateCode))
+            if (string.IsNullOrWhiteSpace(licensePlate) || string.IsNullOrWhiteSpace(stateCode) || checkInId == Guid.Empty)
             {
-                return await CreateErrorResponseAsync(req, HttpStatusCode.BadRequest, "licensePlate and stateCode are required", requestId);
+                return await CreateErrorResponseAsync(req, HttpStatusCode.BadRequest, "License plate, state code, and check-in ID are required", requestId);
             }
 
-            // Get check in from query string
-            var query = HttpUtility.ParseQueryString(req.Url.Query);
-            var checkInIdParamx = query["check-in"];
-            
-            //if (string.IsNullOrWhiteSpace(checkInIdParam))
-            //{
-            //    return await CreateErrorResponseAsync(req, HttpStatusCode.BadRequest, "location query parameter is required", requestId);
-            //}
-
-            //if (!Guid.TryParse(checkInIdParam, out var checkInId))
-            //{
-            //    return await CreateErrorResponseAsync(req, HttpStatusCode.BadRequest, "check-in must be a valid GUID", requestId);
-            //}
 
             licensePlate = licensePlate.Trim();
             stateCode = stateCode.Trim().ToUpperInvariant();
@@ -64,7 +52,7 @@ public class VehicleLookupFunction
             _logger.LogInformation("VehicleLookup {RequestId}: Lookup by plate {LicensePlate}/{StateCode} at location {LocationId}", 
                 requestId, licensePlate, stateCode, licensePlate);
 
-            var vehicle = _vehicleRepository.GetVehicleByLicensePlateAndStateWithUnprocessedCheckIn(licensePlate, stateCode, Guid.NewGuid());
+            var vehicle = _vehicleRepository.GetVehicleByLicensePlateAndStateWithUnprocessedCheckIn(licensePlate, stateCode, checkInId);
             if (vehicle == null)
             {
                 return await CreateErrorResponseAsync(req, HttpStatusCode.NotFound, "Vehicle not found with unprocessed check-in at this location", requestId);
@@ -75,7 +63,17 @@ public class VehicleLookupFunction
             foreach (var customer in vehicleResponse.Customers)
             {
                 customer.PhoneNumber = PhoneNumberHelper.MaskPhoneNumber(customer.PhoneNumber);
+                customer.FirstName = string.Empty;
+                customer.LastName = string.Empty;
+                customer.Email = string.Empty;
             }
+
+            // Update the session with the check-in ID.
+            // This associates the current user session with a specific check-in process.
+            await _sessionManagementService.UpdateSessionAsync(sessionPayload =>
+            {
+                sessionPayload.CheckInUuid = checkInId;
+            });
 
             var response = req.CreateResponse(HttpStatusCode.OK);
             await response.WriteAsJsonAsync(new ApiResponse<VehicleResponse>

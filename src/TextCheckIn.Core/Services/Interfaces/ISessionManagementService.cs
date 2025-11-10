@@ -1,16 +1,20 @@
 ﻿using System;
 using System.Threading.Tasks;
 using TextCheckIn.Data.Entities;
+using TextCheckIn.Core.Models.Domain;
 
 namespace TextCheckIn.Core.Services.Interfaces
 {
     public interface ISessionManagementService
     {
-        CheckInSession? CurrentSession { get; }
+        Sessions? CurrentSession { get; }
         Task<Guid?> CreateNewSessionAsync();
 
-        Task UpdateSessionAsync(CheckInSession session);
+        Task UpdateSessionAsync(Sessions session);
 
-        Task<CheckInSession?> GetSessionAsync(Guid sessionId);
+        Task UpdateSessionAsync(Action<SessionPayload> updateAction);
+
+        Task<Sessions?> GetSessionAsync(Guid sessionId);
+        SessionPayload? GetCurrentSessionPayload();
     }
 }
