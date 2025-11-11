@@ -39,8 +39,17 @@ namespace TextCheckIn.Core.Services
                 WriteIndented = false
             };
 
-            return JsonSerializer.Deserialize<SessionPayload>(
-                _sessionManagementService.CurrentSession.Payload, options) ?? new SessionPayload();
+            try
+            {
+                return JsonSerializer.Deserialize<SessionPayload>(
+                    _sessionManagementService.CurrentSession.Payload, options) ?? new SessionPayload();
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(ex, "Failed to deserialize session payload for session {SessionId}. Creating new payload.", 
+                    _sessionManagementService.CurrentSession?.Id);
+                return new SessionPayload();
+            }
         }
 
         private async Task SaveSessionPayloadAsync(SessionPayload payload)

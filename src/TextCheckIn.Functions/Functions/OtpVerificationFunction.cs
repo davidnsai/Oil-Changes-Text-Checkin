@@ -366,7 +366,14 @@ namespace TextCheckIn.Functions.Functions
                 {
                     try
                     {
-                        var payloadData = JsonSerializer.Deserialize<Dictionary<string, object>>(_sessionManagementService.CurrentSession.Payload);
+                        var options = new JsonSerializerOptions
+                        {
+                            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                            WriteIndented = false
+                        };
+                        
+                        var payloadData = JsonSerializer.Deserialize<Dictionary<string, object>>(
+                            _sessionManagementService.CurrentSession.Payload, options);
                         if (payloadData != null && payloadData.ContainsKey("checkInId"))
                         {
                             var checkInIdStr = payloadData["checkInId"].ToString();
@@ -399,6 +406,11 @@ namespace TextCheckIn.Functions.Functions
                                 }
                             }
                         }
+                    }
+                    catch (JsonException ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to deserialize session payload for check-in lookup. SessionId: {SessionId}", 
+                            _sessionManagementService.CurrentSession?.Id);
                     }
                     catch (Exception ex)
                     {

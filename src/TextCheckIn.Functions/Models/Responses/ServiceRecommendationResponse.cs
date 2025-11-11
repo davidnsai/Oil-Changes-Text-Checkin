@@ -2,10 +2,6 @@ namespace TextCheckIn.Functions.Models.Responses;
 
 public class ServiceRecommendationResponse
 {
-    public int Id { get; set; }
-
-    public int ServiceId { get; set; }
-
     public Guid ServiceUuid { get; set; }
 
     public string ServiceName { get; set; } = string.Empty;

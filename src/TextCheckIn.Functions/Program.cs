@@ -67,6 +67,8 @@ var host = new HostBuilder()
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<ICustomersVehicleRepository, CustomersVehicleRepository>();
 
+        services.AddScoped<MileageBucketService>();
+
         services.Configure<OmniXConfiguration>(
             configuration.GetSection(OmniXConfiguration.SectionName));
 
@@ -77,7 +79,7 @@ var host = new HostBuilder()
 
         var omniXConfig = configuration.GetSection(OmniXConfiguration.SectionName).Get<OmniXConfiguration>();
 
-        services.AddScoped<OmniXServiceBase, OmniXService>();
+        services.AddScoped<IOmniXService, OmniXService>();
 
         var sessionConfig = configuration.GetSection(SessionConfiguration.SectionName).Get<SessionConfiguration>();
 

@@ -71,9 +71,33 @@ namespace TextCheckIn.Core.Services
 
             try
             {
-                var payload = JsonSerializer.Deserialize<SessionPayload>(CurrentSession.Payload) ?? new SessionPayload();
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    WriteIndented = false
+                };
+
+                SessionPayload payload;
+                
+                if (string.IsNullOrEmpty(CurrentSession.Payload))
+                {
+                    payload = new SessionPayload();
+                }
+                else
+                {
+                    try
+                    {
+                        payload = JsonSerializer.Deserialize<SessionPayload>(CurrentSession.Payload, options) ?? new SessionPayload();
+                    }
+                    catch (JsonException ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to deserialize session payload for session {SessionId}. Creating new payload.", CurrentSession.Id);
+                        payload = new SessionPayload();
+                    }
+                }
+
                 updateAction(payload);
-                CurrentSession.Payload = JsonSerializer.Serialize(payload);
+                CurrentSession.Payload = JsonSerializer.Serialize(payload, options);
                 await UpdateSessionAsync(CurrentSession);
             }
             catch (Exception ex)

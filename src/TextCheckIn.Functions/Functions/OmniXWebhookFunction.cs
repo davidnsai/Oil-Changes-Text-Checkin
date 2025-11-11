@@ -13,16 +13,16 @@ namespace TextCheckIn.Functions.Functions;
 
 public class OmniXWebhookFunction
 {
-    private readonly OmniXServiceBase _omniXServiceBase;
+    private readonly IOmniXService _omniXService;
     private readonly OmniXWebhookSignatureValidator _webhookSignatureValidator;
     private readonly ILogger<OmniXWebhookFunction> _logger;
 
     public OmniXWebhookFunction(
-        OmniXServiceBase omniXServiceBase,
+        IOmniXService omniXService,
         OmniXWebhookSignatureValidator webhookSignatureValidator,
         ILogger<OmniXWebhookFunction> logger)
     {
-        _omniXServiceBase = omniXServiceBase;
+        _omniXService = omniXService;
         _webhookSignatureValidator = webhookSignatureValidator;
         _logger = logger;
     }
@@ -59,7 +59,7 @@ public class OmniXWebhookFunction
             // Process the service recommendation
             try
             {
-                await _omniXServiceBase.ProcessIncomingServiceRecommendationAsync(serviceRecommendation);
+                await _omniXService.ProcessIncomingServiceRecommendationAsync(serviceRecommendation);
                 _logger.LogInformation("Webhook {RequestId}: Processing completed for {LicensePlate}",
                     requestId, serviceRecommendation.LicensePlate);
                 await response.WriteAsJsonAsync(new WebhookResponse

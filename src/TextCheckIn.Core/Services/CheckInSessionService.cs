@@ -12,19 +12,19 @@ namespace TextCheckIn.Core.Services
     public class CheckInSessionService : ICheckInSessionService
     {
         private readonly ICheckInRepository _checkInRepository;
-        private readonly ISessionLoginService _sessionLoginService;
-        private readonly SessionConfiguration _sessionConfig;
+        private readonly IOmniXService _omniXService;
+        private readonly ISessionManagementService _sessionManagementService;
         private readonly ILogger<CheckInSessionService> _logger;
 
         public CheckInSessionService(
             ICheckInRepository checkInRepository,
-            ISessionLoginService sessionLoginService,
-            IOptions<SessionConfiguration> sessionConfig,
+            IOmniXService omniXService,
+            ISessionManagementService sessionManagementService,
             ILogger<CheckInSessionService> logger)
         {
             _checkInRepository = checkInRepository;
-            _sessionLoginService = sessionLoginService;
-            _sessionConfig = sessionConfig.Value;
+            _omniXService = omniXService;
+            _sessionManagementService = sessionManagementService;
             _logger = logger;
         }
 
@@ -39,47 +39,28 @@ namespace TextCheckIn.Core.Services
             return Task.FromResult(checkIns);
         }
 
-        public async Task<DomainCheckInSession> LoginAsync(
-            string phoneNumber,
-            string storeId,
+        public async Task<CheckIn> SubmitCheckInAsync(
+            Guid checkInUuid,
             CancellationToken cancellationToken = default)
         {
-            // Validate inputs
-            if (string.IsNullOrWhiteSpace(phoneNumber))
-                throw new ArgumentException("Phone number cannot be empty", nameof(phoneNumber));
-
-            if (string.IsNullOrWhiteSpace(storeId))
-                throw new ArgumentException("Store ID cannot be empty", nameof(storeId));
-
-            _logger.LogInformation("Processing login for phone: {PhoneNumber} at store: {StoreId} using {StorageType} storage", 
-                phoneNumber, storeId, _sessionConfig.StorageType);
-
-            // Route to appropriate login method based on configuration
-            return _sessionConfig.StorageType switch
+            try
             {
-                SessionStorageType.Redis => await LoginWithRedisAsync(phoneNumber, storeId, cancellationToken),
-                SessionStorageType.Database => await LoginWithDatabaseAsync(phoneNumber, storeId, cancellationToken),
-                _ => throw new InvalidOperationException($"Unknown session storage type: {_sessionConfig.StorageType}")
-            };
+                var checkIn = await _checkInRepository.GetCheckInByUuidAsync(checkInUuid);
+                if (checkIn == null || _sessionManagementService.CurrentSession == null || _sessionManagementService.CurrentSession.CustomerId == null)
+                {
+                    throw new Exception("Check-in not found");
+                }
+                checkIn.IsProcessed = true;
+                checkIn.CustomerId = _sessionManagementService.CurrentSession.CustomerId;
+                await _checkInRepository.UpdateCheckInAsync(checkIn);
+                await _omniXService.SubmitWorkOrderAsync(checkInUuid, checkIn);
+                return checkIn;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error submitting check-in: {ErrorMessage}", ex.Message);
+                throw;
+            }
         }
-
-        private async Task<DomainCheckInSession> LoginWithRedisAsync(
-            string phoneNumber,
-            string storeId,
-            CancellationToken cancellationToken = default)
-        {
-            _logger.LogDebug("Routing to Redis session login service");
-            return await _sessionLoginService.LoginAsync(phoneNumber, storeId, cancellationToken);
-        }
-
-        private async Task<DomainCheckInSession> LoginWithDatabaseAsync(
-            string phoneNumber,
-            string storeId,
-            CancellationToken cancellationToken = default)
-        {
-            _logger.LogDebug("Routing to Database session login service");
-            return await _sessionLoginService.LoginAsync(phoneNumber, storeId, cancellationToken);
-        }
-
     }
 }

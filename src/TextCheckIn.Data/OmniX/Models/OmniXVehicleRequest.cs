@@ -6,7 +6,7 @@ public abstract class OmniXVehicleRequest
 
     public required string ClientLocationId { get; set; }
 
-    public required DateTime Datetime { get; set; }
+    public required string Datetime { get; set; }
 
     public required string LicensePlate { get; set; }
 

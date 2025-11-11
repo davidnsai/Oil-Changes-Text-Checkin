@@ -9,14 +9,14 @@ namespace TextCheckIn.Functions.Extensions;
 public class OmniXHealthCheck : IHealthCheck
 {
     private readonly OmniXConfiguration _config;
-    private readonly OmniXServiceBase _omniXService;
+    private readonly IOmniXService _omniXService;
 
     public OmniXHealthCheck(
         IOptions<OmniXConfiguration> config,
-        OmniXServiceBase omniXServiceBase)
+        IOmniXService omniXService)
     {
         _config = config.Value;
-        _omniXService = omniXServiceBase;
+        _omniXService = omniXService;
     }
 
     public async Task<HealthCheckResult> CheckHealthAsync(

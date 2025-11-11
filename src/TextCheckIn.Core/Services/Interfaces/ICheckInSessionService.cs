@@ -6,4 +6,5 @@ namespace TextCheckIn.Core.Services.Interfaces;
 public interface ICheckInSessionService : ISessionLoginService
 {
     Task<List<CheckIn>> GetRecentCheckInsByLocationAsync(Guid locationId, CancellationToken cancellationToken = default);
+    Task<CheckIn> SubmitCheckInAsync(Guid checkInUuid, CancellationToken cancellationToken);
 }

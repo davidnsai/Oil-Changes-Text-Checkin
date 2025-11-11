@@ -38,25 +38,6 @@ namespace TextCheckIn.Functions.Functions
             _customersVehicleRepository = customersVehicleRepository;
         }
 
-        private async Task<HttpResponseData> CreateErrorResponseAsync<T>(
-            HttpRequestData request,
-            HttpStatusCode statusCode,
-            string errorMessage,
-            string requestId)
-        {
-            var response = request.CreateResponse(statusCode);
-            await response.WriteAsJsonAsync(new ApiResponse<T>
-            {
-                Success = false,
-                Data = default,
-                Error = errorMessage,
-                Timestamp = DateTime.UtcNow,
-                RequestId = requestId,
-                SessionId = _sessionManagementService.CurrentSession?.Id.ToString() ?? string.Empty
-            });
-            return response;
-        }
-
         [Function("GetRecentCheckIns")]
         public async Task<HttpResponseData> GetRecentCheckInsAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "checkin/recent")]
@@ -116,13 +97,14 @@ namespace TextCheckIn.Functions.Functions
             }
         }
 
-        [Function("PerformCheckIn")]
-        public async Task<HttpResponseData> PerformCheckInAsync(
+        [Function("SubmitCheckIn")]
+        public async Task<HttpResponseData> SubmitCheckInAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "checkin/submit")]
-            HttpRequestData request)
+            HttpRequestData request,
+            CancellationToken cancellationToken = default)
         {
             var requestId = Guid.NewGuid().ToString()[..8];
-            _logger.LogDebug("PerformCheckIn {RequestId}: Received request", requestId);
+            _logger.LogDebug("SubmitCheckIn {RequestId}: Received request", requestId);
 
             try
             {
@@ -134,18 +116,24 @@ namespace TextCheckIn.Functions.Functions
 
                 var checkInRequest = JsonSerializer.Deserialize<CheckInRequest>(request.Body, options);
 
-                if (checkInRequest == null || string.IsNullOrWhiteSpace(checkInRequest.PhoneNumber) || string.IsNullOrWhiteSpace(checkInRequest.StoreId))
+                if (checkInRequest == null || checkInRequest.CheckInUuid == Guid.Empty)
                 {
-                    return await CreateErrorResponseAsync<object>(request, HttpStatusCode.BadRequest, "Phone number and store ID are required", requestId);
+                    return await CreateErrorResponseAsync<object>(request, HttpStatusCode.BadRequest, "Check-in ID is required", requestId);
                 }
 
-                var session = await _checkInSessionService.LoginAsync(checkInRequest.PhoneNumber, checkInRequest.StoreId);
+                var checkIn = await _checkInSessionService.SubmitCheckInAsync(checkInRequest.CheckInUuid, cancellationToken);
+
+                if (checkIn == null)
+                {
+                    return await CreateErrorResponseAsync<object>(request, HttpStatusCode.NotFound, "Check-in not found", requestId);
+                }
 
                 var response = request.CreateResponse(HttpStatusCode.OK);
                 await response.WriteAsJsonAsync(new ApiResponse<object>
                 {
                     Success = true,
-                    Data = session,
+                    Data = null,
+                    Message = "Check-in submitted successfully",
                     Timestamp = DateTime.UtcNow,
                     RequestId = requestId,
                     SessionId = _sessionManagementService.CurrentSession?.Id.ToString() ?? string.Empty
@@ -155,7 +143,7 @@ namespace TextCheckIn.Functions.Functions
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "PerformCheckIn {RequestId}: Error processing check-in", requestId);
+                _logger.LogError(ex, "SubmitCheckIn {RequestId}: Error processing check-in", requestId);
                 return await CreateErrorResponseAsync<object>(request, HttpStatusCode.InternalServerError, "An error occurred while processing the check-in", requestId);
             }
         }
@@ -242,6 +230,25 @@ namespace TextCheckIn.Functions.Functions
                 _logger.LogError(ex, "UpdateMileage {RequestId}: Error updating mileage for check-in {CheckInId}", requestId, checkInId);
                 return await CreateErrorResponseAsync<bool>(request, HttpStatusCode.InternalServerError, "An error occurred while updating the mileage", requestId);
             }
+        }
+
+        private async Task<HttpResponseData> CreateErrorResponseAsync<T>(
+            HttpRequestData request,
+            HttpStatusCode statusCode,
+            string errorMessage,
+            string requestId)
+        {
+            var response = request.CreateResponse(statusCode);
+            await response.WriteAsJsonAsync(new ApiResponse<T>
+            {
+                Success = false,
+                Data = default,
+                Error = errorMessage,
+                Timestamp = DateTime.UtcNow,
+                RequestId = requestId,
+                SessionId = _sessionManagementService.CurrentSession?.Id.ToString() ?? string.Empty
+            });
+            return response;
         }
     }
 }

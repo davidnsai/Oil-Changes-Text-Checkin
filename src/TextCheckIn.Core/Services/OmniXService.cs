@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using TextCheckIn.Core.Models.Configuration;
 using TextCheckIn.Core.Services.Interfaces;
 using TextCheckIn.Data.Repositories.Interfaces;
@@ -9,10 +10,11 @@ using TextCheckIn.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using TextCheckIn.Data.Context;
 using TextCheckIn.Data.OmniX.Models;
+using System.Net.Http;
 
 namespace TextCheckIn.Core.Services
 {
-    public class OmniXService : OmniXServiceBase
+    public class OmniXService : IOmniXService
     {
         private readonly OmniXConfiguration _config;
         private readonly ILogger<OmniXService> _logger;
@@ -22,6 +24,8 @@ namespace TextCheckIn.Core.Services
         private readonly IServiceRepository _serviceRepository;
         private readonly ICheckInServiceRepository _checkInServiceRepository;
         private readonly AppDbContext _dbContext;
+        private readonly MileageBucketService _mileageBucketService;
+        private readonly HttpClient _httpClient;
 
         public OmniXService(
             IOptions<OmniXConfiguration> options,
@@ -30,7 +34,9 @@ namespace TextCheckIn.Core.Services
             ICheckInRepository checkInRepository,
             IServiceRepository serviceRepository,
             ICheckInServiceRepository checkInServiceRepository,
-            AppDbContext dbContext) : base(logger)
+            AppDbContext dbContext,
+            MileageBucketService mileageBucketService,
+            IHttpClientFactory httpClientFactory)
         {
             _config = options.Value;
             _logger = logger;
@@ -39,25 +45,60 @@ namespace TextCheckIn.Core.Services
             _serviceRepository = serviceRepository;
             _checkInServiceRepository = checkInServiceRepository;
             _dbContext = dbContext;
-            _jsonOptions = new JsonSerializerOptions
+            _mileageBucketService = mileageBucketService;
+            _httpClient = httpClientFactory.CreateClient("OmniXApi");
+
+            // Use the globally configured JSON options, but create a new instance to avoid modifying the shared options
+            _jsonOptions = new JsonSerializerOptions()
             {
-                PropertyNameCaseInsensitive = true
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                PropertyNameCaseInsensitive = true // Keep this for deserialization
             };
         }
 
-        public override async Task<List<CheckInService>> GetServiceRecommendationAsync(GetServiceRecommendationsByVinRequest request)
+        public async Task<List<CheckInService>> GetServiceRecommendationAsync(GetServiceRecommendationsByCheckInUuidRequest request)
         {
-            throw new NotImplementedException();
+            // Get the check-in to access EstimatedMileage and ActualMileage
+            var checkIn = await _checkInRepository.GetCheckInByUuidAsync(request.CheckInUuid);
+            if (checkIn == null)
+            {
+                _logger.LogWarning("Check-in with UUID {CheckInUuid} not found", request.CheckInUuid);
+                return new List<CheckInService>();
+            }
+
+            // Get all CheckInService records for the check-in
+            var allCheckInServices = await _checkInServiceRepository.GetCheckInServicesByCheckInUuidAsync(request.CheckInUuid);
+
+            if (!allCheckInServices.Any())
+            {
+                return new List<CheckInService>();
+            }
+
+            // Extract unique MileageBucket values from the services
+            var availableBuckets = allCheckInServices.Select(cs => cs.MileageBucket).Distinct().ToList();
+
+            // Determine actual mileage: use request.Mileage if provided, otherwise use CheckIn.ActualMileage
+            var actualMileage = request.Mileage ?? checkIn.ActualMileage;
+
+            // Use MileageBucketService to select the appropriate bucket
+            var selectedBucket = _mileageBucketService.SelectMileageBucket(
+                actualMileage,
+                checkIn.EstimatedMileage,
+                availableBuckets);
+
+            _logger.LogInformation(
+                "Selecting mileage bucket {SelectedBucket} for check-in {CheckInUuid}. Actual: {ActualMileage}, Estimated: {EstimatedMileage}",
+                selectedBucket, request.CheckInUuid, actualMileage, checkIn.EstimatedMileage);
+
+            // Filter services to only those matching the selected bucket
+            var filteredServices = allCheckInServices
+                .Where(cs => cs.MileageBucket == selectedBucket)
+                .ToList();
+
+            return filteredServices;
         }
 
-        public override async Task<List<CheckInService>> GetServiceRecommendationAsync(GetServiceRecommendationsByLicensePlateRequest request)
-        {
-            var checkInServices = await _checkInServiceRepository.GetCheckInServicesByCheckInUuidAsync(request.CheckInId);
-
-            return checkInServices;            
-        }
-
-        public override async Task ProcessIncomingServiceRecommendationAsync(ServiceRecommendation notification)
+        public async Task ProcessIncomingServiceRecommendationAsync(ServiceRecommendation notification)
         {
             using var transaction = await _dbContext.Database.BeginTransactionAsync();
 
@@ -204,6 +245,89 @@ namespace TextCheckIn.Core.Services
                 _logger.LogError(ex, "Error processing incoming recommendation for {LicensePlate}: {Message}",
                     notification.LicensePlate, ex.Message);
                 throw; // Re-throw to allow proper error handling by the caller
+            }
+        }
+
+        public async Task SubmitWorkOrderAsync(Guid checkInUuid, CheckIn checkIn)
+        {
+            try
+            {
+                _logger.LogInformation("Submitting work order for check-in {CheckInUuid}", checkInUuid);
+
+                if (checkIn.Vehicle == null)
+                {
+                    throw new InvalidOperationException($"Vehicle not found for check-in {checkInUuid}");
+                }
+
+                if (checkIn.OmnixLocationId == null)
+                {
+                    throw new InvalidOperationException($"Location ID is required for check-in {checkInUuid}");
+                }
+
+                if (checkIn.ClientLocationId == null)
+                {
+                    throw new InvalidOperationException($"Client location ID is required for check-in {checkInUuid}");
+                }
+
+                var recommendedServices = checkIn.CheckInServices.Select(cs => new RecommendedService
+                {
+                    Id = cs.Service.ServiceUuid.ToString(),
+                    Name = cs.Service.Name,
+                    IntervalMiles = cs.IntervalMiles,
+                    LastServiceMiles = cs.LastServiceMiles,
+                    SelectedByClient = cs.IsCustomerSelected
+                }).ToList();
+
+                var workOrderRequest = new WorkOrder
+                {
+                    RecommendationId = checkIn.Uuid,
+                    Datetime = checkIn.DateTime.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                    ClientLocationId = checkIn.ClientLocationId.Value.ToString(),
+                    LocationId = checkIn.OmnixLocationId.Value,
+                    LicensePlate = checkIn.Vehicle.LicensePlate,
+                    StateCode = checkIn.Vehicle.StateCode ?? string.Empty,
+                    Make = checkIn.Vehicle.Make,
+                    Model = checkIn.Vehicle.Model,
+                    Year = checkIn.Vehicle.YearOfMake,
+                    Vin = checkIn.Vehicle.Vin,
+                    EstimatedMileage = checkIn.EstimatedMileage,
+                    ActualMileage = checkIn.ActualMileage,
+                    Services = recommendedServices
+                };
+
+                // Serialize with your custom options
+                var json = JsonSerializer.Serialize(workOrderRequest, _jsonOptions);
+                // Create content with proper encoding
+                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                // Make the POST request
+                var response = await _httpClient.PostAsync("salesnavigator/workorders", content);
+
+                var responseBody = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation(
+                        "Successfully submitted work order for check-in {CheckInUuid}. Status: {StatusCode}",
+                        checkInUuid, response.StatusCode);
+                }
+                else
+                {
+                    _logger.LogError(
+                        "Failed to submit work order for check-in {CheckInUuid}. Status: {StatusCode}, Response: {ErrorContent}",
+                        checkInUuid, response.StatusCode, responseBody);
+                    response.EnsureSuccessStatusCode();
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "HTTP error submitting work order for check-in {CheckInUuid}", checkInUuid);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error submitting work order for check-in {CheckInUuid}: {Message}", checkInUuid, ex.Message);
+                throw;
             }
         }
     }

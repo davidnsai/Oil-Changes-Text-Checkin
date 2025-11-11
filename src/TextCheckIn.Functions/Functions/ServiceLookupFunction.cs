@@ -18,37 +18,38 @@ namespace TextCheckIn.Functions.Functions;
 
 public class ServiceLookupFunction
 {
-    private readonly OmniXServiceBase _omniXServiceBase;
+    private readonly IOmniXService _omniXService;
     private readonly ISessionManagementService _sessionManagementService;
     private readonly ICheckInServiceRepository _checkInServiceRepository;
     private readonly ICheckInRepository _checkInRepository;
     private readonly ILogger<ServiceLookupFunction> _logger;
 
     public ServiceLookupFunction(
-        OmniXServiceBase omniXServiceBase,
+        IOmniXService omniXService,
         ISessionManagementService sessionManagementService,
         ICheckInServiceRepository checkInServiceRepository,
         ICheckInRepository checkInRepository,
         ILogger<ServiceLookupFunction> logger)
     {
-        _omniXServiceBase = omniXServiceBase;
+        _omniXService = omniXService;
         _sessionManagementService = sessionManagementService;
         _checkInServiceRepository = checkInServiceRepository;
         _checkInRepository = checkInRepository;
         _logger = logger;
     }
 
-    [Function("GetServiceRecommendationsByVin")]
-    public async Task<HttpResponseData> GetVehicleRecommendationsByVinAsync(
-        [HttpTrigger(AuthorizationLevel.Admin, "post", Route = "services/recommended/get-by-vin")] 
+    [Function("GetServiceRecommendationsByCheckInUuid")]
+    public async Task<HttpResponseData> GetServiceRecommendationsByCheckInUuidAsync(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "services/recommended/get-by-check-in-uuid")] 
         HttpRequestData request)
     {
         var requestId = Guid.NewGuid().ToString()[..8];
 
         try
         {
-            var requestData = await request.ReadFromJsonAsync<GetServiceRecommendationsByVinRequest>();
-            _logger.LogInformation($"GetServiceRecommendationsByVin {requestId}: Getting recommendations for VIN {requestData!.Vin}");
+            var requestData = await request.ReadFromJsonAsync<GetServiceRecommendationsByCheckInUuidRequest>();
+            _logger.LogInformation($"GetServiceRecommendationsByCheckInUuid {requestId}: " +
+                $"Getting recommendations for check-in {requestData!.CheckInUuid}");
 
             var validationContext = new ValidationContext(requestData);
             var validationResults = new List<ValidationResult>();
@@ -59,100 +60,22 @@ public class ServiceLookupFunction
                 return await CreateErrorResponseAsync(request, HttpStatusCode.BadRequest, message, requestId, validationResults);
             }
 
-            var serviceRecommendations = await _omniXServiceBase.GetServiceRecommendationAsync(requestData);
+            var serviceRecommendations = await _omniXService.GetServiceRecommendationAsync(requestData);
 
-            if (serviceRecommendations == null) 
+            if (serviceRecommendations == null || !serviceRecommendations.Any())
             {
-                var message = $"No service recommendations found for VIN {requestData.Vin}.";
-                return await CreateErrorResponseAsync(request, HttpStatusCode.NotFound, message, requestId, validationResults);
-            }
-
-            _logger.LogInformation($"GetServiceRecommendationsByVin {requestId}: " +
-                $"Found {serviceRecommendations.Count()} recommendations for VIN {requestData.Vin}");
-
-            var response = request.CreateResponse(HttpStatusCode.OK);
-
-            // Map entities to DTOs to avoid circular reference issues
-            var serviceRecommendationDtos = serviceRecommendations.Select(cis => new ServiceRecommendationResponse
-            {
-                Id = cis.Id,
-                ServiceId = cis.ServiceId,
-                ServiceUuid = cis.Service.ServiceUuid,
-                ServiceName = cis.Service.Name,
-                ServiceDescription = cis.Service.Description,
-                Price = cis.Service.Price,
-                EstimatedDurationMinutes = cis.Service.EstimatedDurationMinutes,
-                IsCustomerSelected = cis.IsCustomerSelected,
-                IntervalMiles = cis.IntervalMiles,
-                LastServiceMiles = cis.LastServiceMiles,
-                MileageBucket = cis.MileageBucket
-            }).ToList();
-
-            await response.WriteAsJsonAsync(new ApiResponse<List<ServiceRecommendationResponse>>() 
-            { 
-                Success = true,
-                Data = serviceRecommendationDtos,
-                Timestamp = DateTime.UtcNow,
-                RequestId = requestId,
-                SessionId = _sessionManagementService.CurrentSession?.Id.ToString() ?? string.Empty
-            });
-
-            return response;
-        }
-        catch(AggregateException)
-        {
-            var message = "The request body is missing one or more required fields.";
-            return await CreateErrorResponseAsync(request, HttpStatusCode.BadRequest, message, requestId);
-        }
-        catch (Exception ex)
-        {
-            var errorMessage = "Error retrieving service recommendation";
-            _logger.LogError(ex, $"{errorMessage}.\nRequestId: {requestId}.\nDetail: {ex.Message}");
-
-            return await CreateErrorResponseAsync(request, HttpStatusCode.InternalServerError, errorMessage, requestId);
-        }
-    }
-
-    [Function("GetServiceRecommendationsByLicensePlate")]
-    public async Task<HttpResponseData> GetServiceRecommendationsByLicensePlateAsync(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "services/recommended/get-by-license-plate")]
-        HttpRequestData request)
-    {
-        var requestId = Guid.NewGuid().ToString()[..8];
-
-        try
-        {
-            var requestData = await request.ReadFromJsonAsync<GetServiceRecommendationsByLicensePlateRequest>();
-            _logger.LogInformation($"GetServiceRecommendationsByLicensePlate {requestId}: " +
-                $"Getting recommendations for license plate {requestData!.LicensePlate}{requestData.StateCode}");
-
-            var validationContext = new ValidationContext(requestData);
-            var validationResults = new List<ValidationResult>();
-
-            if(!Validator.TryValidateObject(requestData, validationContext, validationResults, true))
-            {
-                var message = "The request body has one or more invalid fields.";
-                return await CreateErrorResponseAsync(request, HttpStatusCode.BadRequest, message, requestId, validationResults);
-            }
-
-            var serviceRecommendations = await _omniXServiceBase.GetServiceRecommendationAsync(requestData);
-
-            if (serviceRecommendations == null)
-            {
-                var message = $"No service recommendations found for license plate {requestData.LicensePlate}{requestData.StateCode}.";
+                var message = $"No service recommendations found for check-in {requestData.CheckInUuid}.";
                 return await CreateErrorResponseAsync(request, HttpStatusCode.NotFound, message, requestId);
             }
 
-            _logger.LogInformation($"GetServiceRecommendationsByLicensePlate {requestId}: " +
-                $"Found {serviceRecommendations.Count()} recommendations for license plate {requestData.LicensePlate}{requestData.StateCode}");
+            _logger.LogInformation($"GetServiceRecommendationsByCheckInUuid {requestId}: " +
+                $"Found {serviceRecommendations.Count()} recommendations for check-in {requestData.CheckInUuid}");
 
             var response = request.CreateResponse(HttpStatusCode.OK);
 
             // Map entities to DTOs to avoid circular reference issues
             var serviceRecommendationDtos = serviceRecommendations.Select(cis => new ServiceRecommendationResponse
             {
-                Id = cis.Id,
-                ServiceId = cis.ServiceId,
                 ServiceUuid = cis.Service.ServiceUuid,
                 ServiceName = cis.Service.Name,
                 ServiceDescription = cis.Service.Description,
