@@ -3,9 +3,12 @@ using PhoneNumbers;
 
 namespace TextCheckIn.Core.Helpers;
 
-public static class PhoneNumberHelper
+public static partial class PhoneNumberHelper
 {
     private static readonly PhoneNumberUtil _phoneNumberUtil = PhoneNumberUtil.GetInstance();
+
+    [GeneratedRegex(@"\D")]
+    private static partial Regex NonDigitRegex();
 
     public static string MaskPhoneNumber(string? phoneNumber)
     {
@@ -21,10 +24,10 @@ public static class PhoneNumberHelper
             var formattedNumber = _phoneNumberUtil.Format(parsedNumber, PhoneNumberFormat.NATIONAL);
             
             // Extract the last 4 digits
-            var digits = Regex.Replace(formattedNumber, @"\D", "");
+            var digits = NonDigitRegex().Replace(formattedNumber, "");
             if (digits.Length >= 4)
             {
-                var lastFour = digits.Substring(digits.Length - 4);
+                var lastFour = digits[^4..];
                 
                 // Return masked format
                 return $"(XXX) XXX-{lastFour}";
@@ -36,11 +39,11 @@ public static class PhoneNumberHelper
         catch
         {
             // If parsing fails, try basic masking
-            var cleanedNumber = Regex.Replace(phoneNumber, @"\D", "");
+            var cleanedNumber = NonDigitRegex().Replace(phoneNumber, "");
             
             if (cleanedNumber.Length >= 4)
             {
-                var lastFour = cleanedNumber.Substring(cleanedNumber.Length - 4);
+                var lastFour = cleanedNumber[^4..];
                 return $"(XXX) XXX-{lastFour}";
             }
             

@@ -23,7 +23,7 @@ public class DatabaseSessionLoginService : ISessionLoginService
         _logger = logger;
     }
 
-    public async Task<CheckInSession> LoginAsync(
+    public Task<CheckInSession> LoginAsync(
         string phoneNumber,
         string storeId,
         CancellationToken cancellationToken = default)
@@ -65,6 +65,6 @@ public class DatabaseSessionLoginService : ISessionLoginService
         // TODO: Save to database
         // await _checkInRepository.SaveSessionAsync(newSession, cancellationToken);
 
-        return newSession;
+        return Task.FromResult(newSession);
     }
 }
