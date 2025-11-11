@@ -352,12 +352,29 @@ namespace TextCheckIn.Functions.Functions
                     _logger.LogInformation("Created new customer with ID {CustomerId}", customer.Id);
                 }
 
+                if (customer == null)
+                {
+                    _logger.LogError("Failed to get or create customer for phone {PhoneNumber}", normalizedPhone);
+                    var errorResponse = req.CreateResponse(HttpStatusCode.InternalServerError);
+                    await errorResponse.WriteAsJsonAsync(new ApiResponse<OtpResponse>
+                    {
+                        Success = false,
+                        Data = null,
+                        Error = "Failed to process customer information",
+                        Timestamp = DateTime.UtcNow,
+                        RequestId = requestId,
+                        SessionId = _sessionManagementService.CurrentSession?.Id.ToString() ?? string.Empty
+                    });
+                    return errorResponse;
+                }
+
                 // Link customer to session
                 if (_sessionManagementService.CurrentSession != null)
                 {
-                    _sessionManagementService.CurrentSession.CustomerId = customer.Id;
-                    await _sessionManagementService.UpdateSessionAsync(_sessionManagementService.CurrentSession);
-                    _logger.LogInformation("Linked customer {CustomerId} to session {SessionId}", customer.Id, _sessionManagementService.CurrentSession?.Id);
+                    var currentSession = _sessionManagementService.CurrentSession;
+                    currentSession.CustomerId = customer.Id;
+                    await _sessionManagementService.UpdateSessionAsync(currentSession);
+                    _logger.LogInformation("Linked customer {CustomerId} to session {SessionId}", customer.Id, currentSession.Id);
                 }
 
                 // Get check-in from session payload if it exists
@@ -385,7 +402,7 @@ namespace TextCheckIn.Functions.Functions
                                     // Update check-in with customer ID
                                     checkIn.CustomerId = customer.Id;
                                     await _checkInRepository.UpdateCheckInAsync(checkIn);
-                                    _logger.LogInformation("Updated check-in {CheckInId} with customer {CustomerId}", checkIn?.Id, customer.Id);
+                                    _logger.LogInformation("Updated check-in {CheckInId} with customer {CustomerId}", checkIn.Id, customer.Id);
 
                                     // If this is a new customer and we have a vehicle, create the customer-vehicle link
                                     if (isNewCustomer && checkIn.VehicleId.HasValue)

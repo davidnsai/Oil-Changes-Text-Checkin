@@ -19,7 +19,7 @@ public class OmniXHealthCheck : IHealthCheck
         _omniXService = omniXService;
     }
 
-    public async Task<HealthCheckResult> CheckHealthAsync(
+    public Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context, 
         CancellationToken cancellationToken = default)
     {
@@ -36,12 +36,12 @@ public class OmniXHealthCheck : IHealthCheck
 
             if (string.IsNullOrEmpty(_config.ApiUrl))
             {
-                return HealthCheckResult.Unhealthy("omniX API URL not configured", data: healthData);
+                return Task.FromResult(HealthCheckResult.Unhealthy("omniX API URL not configured", data: healthData));
             }
 
             if (string.IsNullOrEmpty(_config.ApiKey))
             {
-                return HealthCheckResult.Unhealthy("omniX API key not configured", data: healthData);
+                return Task.FromResult(HealthCheckResult.Unhealthy("omniX API key not configured", data: healthData));
             }
 
             if (string.IsNullOrEmpty(_config.WebhookSecret))
@@ -49,11 +49,11 @@ public class OmniXHealthCheck : IHealthCheck
                 healthData["WebhookStatus"] = "webhook secret not configured";
             }
 
-            return HealthCheckResult.Healthy("omniX service configuration is valid", healthData);
+            return Task.FromResult(HealthCheckResult.Healthy("omniX service configuration is valid", healthData));
         }
         catch (Exception ex)
         {
-            return HealthCheckResult.Unhealthy("omniX health check failed", ex);
+            return Task.FromResult(HealthCheckResult.Unhealthy("omniX health check failed", ex));
         }
     }
 }
