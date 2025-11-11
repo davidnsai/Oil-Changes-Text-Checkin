@@ -11,52 +11,38 @@ public class MileageBucketService
     /// <returns>The selected mileage bucket value</returns>
     public int SelectMileageBucket(int? actualMileage, int? estimatedMileage, IEnumerable<int> availableBuckets)
     {
-        if (!availableBuckets.Any())
+        var buckets = availableBuckets.OrderBy(b => b).ToList();
+        
+        if (buckets.Count == 0)
         {
             throw new ArgumentException("Available buckets list cannot be empty", nameof(availableBuckets));
         }
 
-        var buckets = availableBuckets.OrderBy(b => b).ToList();
+        // Determine the target mileage to use for selection
+        int? targetMileage = actualMileage ?? estimatedMileage;
 
-        // If actual mileage is provided, find the closest bucket that is <= actual mileage
-        // For middle cases, round down to the lower bucket
-        if (actualMileage.HasValue)
+        // If no mileage information is available, return the lowest bucket
+        if (!targetMileage.HasValue)
         {
-            // Find all buckets <= actual mileage
-            var validBuckets = buckets.Where(b => b <= actualMileage.Value).ToList();
-            
-            if (validBuckets.Any())
+            return buckets[0];
+        }
+
+        // Find the highest bucket that is <= target mileage
+        int? selectedBucket = null;
+        foreach (var bucket in buckets)
+        {
+            if (bucket <= targetMileage.Value)
             {
-                // Return the closest one (which will be the highest value <= actual mileage)
-                return validBuckets.Max();
+                selectedBucket = bucket;
             }
-            
-            // If no bucket is <= actual mileage, return the lowest available bucket
-            return buckets.Min();
+            else
+            {
+                break; // Buckets are sorted, so we can stop here
+            }
         }
 
-        // If no actual mileage, use estimated mileage
-        if (!estimatedMileage.HasValue)
-        {
-            // If no estimated mileage either, return the lowest bucket
-            return buckets.Min();
-        }
-
-        // Find bucket that exactly matches estimated mileage
-        if (buckets.Contains(estimatedMileage.Value))
-        {
-            return estimatedMileage.Value;
-        }
-
-        // If no exact match, find the closest lower bucket
-        var lowerBuckets = buckets.Where(b => b <= estimatedMileage.Value).ToList();
-        if (lowerBuckets.Any())
-        {
-            return lowerBuckets.Max();
-        }
-
-        // If no bucket is <= estimated mileage, return the lowest available bucket
-        return buckets.Min();
+        // Return the selected bucket, or the lowest if none found
+        return selectedBucket ?? buckets[0];
     }
 }
 
