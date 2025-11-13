@@ -1,15 +1,18 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace TextCheckIn.Data.Entities;
 
-public class Service
+public class Service : BaseEntity
 {
-    [Key]
-    public int Id { get; set; }
+    /// <summary>
+    /// Service-specific UUID property name for compatibility
+    /// </summary>
+    public Guid ServiceUuid
+    {
+        get => Uuid;
+        set => Uuid = value;
+    }
 
-    [Required]
-    public Guid ServiceUuid { get; set; }
-    
     [Required]
     [MaxLength(255)]
     public string Name { get; set; } = string.Empty;
@@ -25,12 +28,6 @@ public class Service
     [Required]
     [MaxLength(10)]
     public int? EstimatedDurationMinutes { get; set; }
-    
-    [Required]
-    public DateTime CreatedAt { get; set; }
-    
-    [Required]
-    public DateTime UpdatedAt { get; set; }
     
     // Navigation property
     public ICollection<CheckInService> CheckInServices { get; set; } = new List<CheckInService>();

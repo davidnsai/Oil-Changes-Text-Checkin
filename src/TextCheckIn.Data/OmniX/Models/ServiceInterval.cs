@@ -1,10 +1,9 @@
-﻿
+﻿using TextCheckIn.Shared.Models;
+
 namespace TextCheckIn.Data.OmniX.Models;
 
-public class ServiceInterval
+public class ServiceInterval : BaseServiceInterval
 {
-    public required int Mileage { get; set; }
-
     public required List<RecommendedService> Services { get; set; } = [];
 }
 
